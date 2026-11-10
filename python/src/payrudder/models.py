@@ -2121,6 +2121,12 @@ class InvoiceSaga(TypedDict):
     version: int
 
 
+class CreateCreditNoteRequest(TypedDict, total=False):
+    amount_minor: int
+    reason: str
+    refund_to_card: bool
+
+
 class AuditEvent(TypedDict):
     id: str
     tenant_id: str

@@ -10,8 +10,10 @@ use Generator;
 use Payrudder\Exception\PayrudderException;
 use Payrudder\Internal\AbstractResource;
 use Payrudder\Internal\Cast;
+use Payrudder\Model\CreateCreditNoteRequest;
 use Payrudder\Model\CreateInvoiceLinkRequest;
 use Payrudder\Model\CreateInvoiceLinkResponse;
+use Payrudder\Model\CreditNote;
 use Payrudder\Model\Invoice;
 use Payrudder\Model\InvoiceSaga;
 use Payrudder\Model\ListInvoicesResponse;
@@ -161,6 +163,20 @@ final class InvoicesResource extends AbstractResource
     public function releaseHeldInvoice(string $id, ?RequestOptions $options = null): InvoiceSaga
     {
         return InvoiceSaga::fromArray($this->call('POST', '/v1/invoices/' . rawurlencode($id) . '/release', [], null, $options));
+    }
+
+    /**
+     * Correct one of your paid invoices with a numbered credit note, added to the customer's credit balance or refunded to the card (POST /v1/invoices/{id}/credit-notes).
+     *
+     * @param string $id
+     * @param CreateCreditNoteRequest|array<string,mixed> $body
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function createCreditNote(string $id, CreateCreditNoteRequest|array $body, ?RequestOptions $options = null): CreditNote
+    {
+        return CreditNote::fromArray($this->call('POST', '/v1/invoices/' . rawurlencode($id) . '/credit-notes', [], Cast::body($body), $options));
     }
 
     /**

@@ -1584,6 +1584,13 @@ class InvoicesResource:
         """
         return cast("m.InvoiceSaga", self._client._request("POST", f"/v1/invoices/{_p(id)}/release", options=options))
 
+    def create_credit_note(self, id: str, body: m.CreateCreditNoteRequest, *, options: RequestOptions | None = None) -> m.CreditNote:
+        """Correct one of your paid invoices with a numbered credit note, added to the customer's credit balance or refunded to the card.
+
+        ``POST /v1/invoices/{id}/credit-notes``
+        """
+        return cast("m.CreditNote", self._client._request("POST", f"/v1/invoices/{_p(id)}/credit-notes", body=body, body_wire='CreateCreditNoteRequest', response_wire='CreditNote', options=options))
+
     def void_held_invoice(self, id: str, *, options: RequestOptions | None = None) -> m.InvoiceSaga:
         """Void an invoice whose first charge is held.
 
@@ -1614,6 +1621,13 @@ class CreditNotesResource:
             token = page.get("next_page_token") or None
             if token is None:
                 return
+
+    def retry_credit_note_refund(self, id: str, *, options: RequestOptions | None = None) -> m.CreditNote:
+        """Ask the payment provider again for a refund to the card that failed.
+
+        ``POST /v1/credit-notes/{id}/retry-refund``
+        """
+        return cast("m.CreditNote", self._client._request("POST", f"/v1/credit-notes/{_p(id)}/retry-refund", response_wire='CreditNote', options=options))
 
     def get_credit_note(self, id: str, *, options: RequestOptions | None = None) -> m.CreditNote:
         """A credit note.
@@ -3596,6 +3610,13 @@ class AsyncInvoicesResource:
         """
         return cast("m.InvoiceSaga", await self._client._request("POST", f"/v1/invoices/{_p(id)}/release", options=options))
 
+    async def create_credit_note(self, id: str, body: m.CreateCreditNoteRequest, *, options: RequestOptions | None = None) -> m.CreditNote:
+        """Correct one of your paid invoices with a numbered credit note, added to the customer's credit balance or refunded to the card.
+
+        ``POST /v1/invoices/{id}/credit-notes``
+        """
+        return cast("m.CreditNote", await self._client._request("POST", f"/v1/invoices/{_p(id)}/credit-notes", body=body, body_wire='CreateCreditNoteRequest', response_wire='CreditNote', options=options))
+
     async def void_held_invoice(self, id: str, *, options: RequestOptions | None = None) -> m.InvoiceSaga:
         """Void an invoice whose first charge is held.
 
@@ -3627,6 +3648,13 @@ class AsyncCreditNotesResource:
             token = page.get("next_page_token") or None
             if token is None:
                 return
+
+    async def retry_credit_note_refund(self, id: str, *, options: RequestOptions | None = None) -> m.CreditNote:
+        """Ask the payment provider again for a refund to the card that failed.
+
+        ``POST /v1/credit-notes/{id}/retry-refund``
+        """
+        return cast("m.CreditNote", await self._client._request("POST", f"/v1/credit-notes/{_p(id)}/retry-refund", response_wire='CreditNote', options=options))
 
     async def get_credit_note(self, id: str, *, options: RequestOptions | None = None) -> m.CreditNote:
         """A credit note.

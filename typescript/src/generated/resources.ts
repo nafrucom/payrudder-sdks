@@ -37,6 +37,7 @@ import type {
   CreateAffiliatePayoutsResponse,
   CreateAffiliateRequest,
   CreateContractWithdrawalRequest,
+  CreateCreditNoteRequestParams,
   CreateCustomerRequest,
   CreateInvoiceLinkRequest,
   CreateInvoiceLinkResponse,
@@ -892,6 +893,17 @@ export class CreditNotesResource {
   }
 
   /**
+   * Ask the payment provider again for a refund to the card that failed
+   *
+   * Only a credit note whose refund failed: `409 billing.credit_note.refund_not_failed` for any other. Settling a failed refund by hand (it was made at the provider some other way) is the operator's. Needs `invoices:write`.
+   *
+   * `POST /v1/credit-notes/{id}/retry-refund`
+   */
+  retryCreditNoteRefund(id: string, options?: RequestOptions): Promise<CreditNote> {
+    return this.t.request<CreditNote>({ method: "POST", path: `/v1/credit-notes/${seg(id)}/retry-refund`, response: "json" }, options);
+  }
+
+  /**
    * A credit note
    *
    * `GET /v1/credit-notes/{id}`
@@ -1737,6 +1749,17 @@ export class InvoicesResource {
    */
   releaseHeldInvoice(id: string, options?: RequestOptions): Promise<InvoiceSaga> {
     return this.t.request<InvoiceSaga>({ method: "POST", path: `/v1/invoices/${seg(id)}/release`, response: "json" }, options);
+  }
+
+  /**
+   * Correct one of your paid invoices with a numbered credit note, added to the customer's credit balance or refunded to the card
+   *
+   * An issued invoice is never edited. The note's amount goes to the customer's credit balance in the invoice's currency and pays their next invoice, or, with refund_to_card, back to the card through the payment provider that took the payment (the note's refund_state says whether it went through; a refund nobody answers is sent again, and a failed one can be retried with POST /v1/credit-notes/{id}/retry-refund). The notes of an invoice never add up to more than the invoice. Only a paid invoice can be credited: `409 billing.credit_note.not_paid` for any other, `409 billing.credit_note.fully_credited` when nothing is left of it, `409 billing.credit_note.nothing_to_refund` when refund_to_card is asked of a payment no provider can return. Works on the invoices of the key's (or the signed-in person's) own environment only. Needs `invoices:write`. Recorded in the audit log (`credit_note.issued`).
+   *
+   * `POST /v1/invoices/{id}/credit-notes`
+   */
+  createCreditNote(id: string, body: CreateCreditNoteRequestParams, options?: RequestOptions): Promise<CreditNote> {
+    return this.t.request<CreditNote>({ method: "POST", path: `/v1/invoices/${seg(id)}/credit-notes`, body, bodyKind: "json", response: "json" }, options);
   }
 
   /**

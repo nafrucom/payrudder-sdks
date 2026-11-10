@@ -118,6 +118,9 @@ MODELS: dict[str, dict[str, Any]] = {
     'CreateAffiliatePayoutsSkipped': {
         'total_minor': ('int',),
     },
+    'CreateCreditNoteRequest': {
+        'amount_minor': ('int',),
+    },
     'CreatePaymentLinkRequest': {
         'amount_minor': ('int',),
     },

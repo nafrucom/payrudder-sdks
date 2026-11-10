@@ -804,6 +804,15 @@ type CreateContractWithdrawalRequest struct {
 	Source string `json:"source,omitempty"`
 }
 
+// CreateCreditNoteRequest is the request body of CreateCreditNote.
+type CreateCreditNoteRequest struct {
+	// int64 minor units; 0 or absent = what is left of the invoice
+	AmountMinor *Int64 `json:"amount_minor,omitempty"`
+	Reason      string `json:"reason,omitempty"`
+	// Refund the amount to the card instead of adding it to the credit balance
+	RefundToCard *bool `json:"refund_to_card,omitempty"`
+}
+
 // CreateCustomerRequest is the request body of CreateCustomer.
 type CreateCustomerRequest struct {
 	ExternalID    string `json:"external_id"`

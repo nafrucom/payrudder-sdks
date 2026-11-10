@@ -741,6 +741,22 @@ export interface CreateContractWithdrawalRequest {
   source?: "api" | "console";
 }
 
+export interface CreateCreditNoteRequest {
+  /** int64 minor units; 0 or absent = what is left of the invoice */
+  amount_minor?: Int64;
+  reason?: string;
+  /** Refund the amount to the card instead of adding it to the credit balance */
+  refund_to_card?: boolean;
+}
+
+export interface CreateCreditNoteRequestParams {
+  /** int64 minor units; 0 or absent = what is left of the invoice */
+  amount_minor?: Int64Input;
+  reason?: string;
+  /** Refund the amount to the card instead of adding it to the credit balance */
+  refund_to_card?: boolean;
+}
+
 export interface CreateCustomerRequest {
   external_id: string;
   name: string;

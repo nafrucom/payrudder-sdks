@@ -1099,6 +1099,19 @@ func (s *CreditNotesService) GetCreditNote(ctx context.Context, id string, opts 
 	return &out, nil
 }
 
+// RetryCreditNoteRefund: Ask the payment provider again for a refund to the card that failed (POST
+// /v1/credit-notes/{id}/retry-refund).
+//
+// Only a credit note whose refund failed: `409 billing.credit_note.refund_not_failed` for any other. Settling a
+// failed refund by hand (it was made at the provider some other way) is the operator's. Needs `invoices:write`.
+func (s *CreditNotesService) RetryCreditNoteRefund(ctx context.Context, id string, opts ...RequestOption) (*CreditNote, error) {
+	var out CreditNote
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/credit-notes/" + url.PathEscape(id) + "/retry-refund", query: nil, body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // CreditPacksService is the credit packs namespace of the API.
 type CreditPacksService service
 
@@ -2181,6 +2194,30 @@ func (s *InvoicesService) ListInvoicesAll(ctx context.Context, params *ListInvoi
 func (s *InvoicesService) GetInvoice(ctx context.Context, id string, opts ...RequestOption) (*Invoice, error) {
 	var out Invoice
 	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/invoices/" + url.PathEscape(id), query: nil, body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// CreateCreditNote: Correct one of your paid invoices with a numbered credit note, added to the customer's
+// credit balance or refunded to the card (POST /v1/invoices/{id}/credit-notes).
+//
+// An issued invoice is never edited. The note's amount goes to the customer's credit balance in the invoice's
+// currency and pays their next invoice, or, with refund_to_card, back to the card through the payment provider
+// that took the payment (the note's refund_state says whether it went through; a refund nobody answers is sent
+// again, and a failed one can be retried with POST /v1/credit-notes/{id}/retry-refund). The notes of an invoice
+// never add up to more than the invoice. Only a paid invoice can be credited: `409
+// billing.credit_note.not_paid` for any other, `409 billing.credit_note.fully_credited` when nothing is left of
+// it, `409 billing.credit_note.nothing_to_refund` when refund_to_card is asked of a payment no provider can
+// return. Works on the invoices of the key's (or the signed-in person's) own environment only. Needs
+// `invoices:write`. Recorded in the audit log (`credit_note.issued`).
+func (s *InvoicesService) CreateCreditNote(ctx context.Context, id string, req *CreateCreditNoteRequest, opts ...RequestOption) (*CreditNote, error) {
+	if req == nil {
+		req = &CreateCreditNoteRequest{}
+	}
+	var body any = req
+	var out CreditNote
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/invoices/" + url.PathEscape(id) + "/credit-notes", query: nil, body: body}, &out, opts); err != nil {
 		return nil, err
 	}
 	return &out, nil

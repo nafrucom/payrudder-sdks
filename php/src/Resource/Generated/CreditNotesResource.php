@@ -75,6 +75,19 @@ final class CreditNotesResource extends AbstractResource
     }
 
     /**
+     * Ask the payment provider again for a refund to the card that failed (POST /v1/credit-notes/{id}/retry-refund).
+     *
+     * @param string $id
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function retryCreditNoteRefund(string $id, ?RequestOptions $options = null): CreditNote
+    {
+        return CreditNote::fromArray($this->call('POST', '/v1/credit-notes/' . rawurlencode($id) . '/retry-refund', [], null, $options));
+    }
+
+    /**
      * A credit note (GET /v1/credit-notes/{id}).
      *
      * @param string $id
