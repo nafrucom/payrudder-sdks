@@ -1,0 +1,8 @@
+# Composer installs the PHP SDK from this repository's root (composer.json); its download leaves out everything but php/src and the licence.
+/go export-ignore
+/typescript export-ignore
+/python export-ignore
+/php/tests export-ignore
+/php/tools export-ignore
+/php/examples export-ignore
+/.github export-ignore

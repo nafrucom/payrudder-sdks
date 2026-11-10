@@ -1,0 +1,32 @@
+{
+    "name": "payrudder/payrudder-php",
+    "description": "PHP SDK for the Payrudder usage-based billing API (tenant API and webhook verification).",
+    "type": "library",
+    "license": "Apache-2.0",
+    "keywords": [
+        "payrudder",
+        "billing",
+        "usage-based",
+        "sdk"
+    ],
+    "homepage": "https://github.com/nafrucom/payrudder-sdks/tree/main/php",
+    "support": {
+        "issues": "https://github.com/nafrucom/payrudder-sdks/issues",
+        "source": "https://github.com/nafrucom/payrudder-sdks/tree/main/php"
+    },
+    "require": {
+        "php": ">=8.1",
+        "ext-json": "*"
+    },
+    "suggest": {
+        "ext-curl": "Used by the built-in transport",
+        "psr/http-client": "To send requests through your own PSR-18 client",
+        "psr/http-factory": "To send requests through your own PSR-18 client",
+        "php-http/discovery": "To find a PSR-18 client and PSR-17 factories automatically"
+    },
+    "autoload": {
+        "psr-4": {
+            "Payrudder\\": "php/src/"
+        }
+    }
+}
