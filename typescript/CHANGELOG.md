@@ -9,3 +9,4 @@ Nothing has been published or tagged yet: the version stays `0.0.0` until the fi
 
 ### Added
 - A client for every operation of the tenant API (`/v1/*`): retries with backoff, typed errors, async-iterator pagination, a batching `events.ingest`, and webhook verification (`verifyWebhook`, `constructEvent`). ESM and CommonJS builds with type declarations; Node 20 or newer, browsers and edge runtimes. No runtime dependencies.
+- `EntitlementCache`: entitlement checks answered from the process's own memory (fresh for `ttlMs`, then stale-while-revalidate), for a middleware that checks a limit on every request.

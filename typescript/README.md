@@ -94,6 +94,27 @@ for (const [i, r] of results.entries()) {
 
 If you need to re-submit an input after a crash, give your own `idempotency_key`s: a repeat then comes back as `duplicate` and is not counted twice. The raw one-request operation is still available as `events.ingestEvents({ events })`.
 
+## Checking a limit on every request
+
+`customers.getEntitlement(customer, meter)` is one request to the API. In a middleware that runs on every request of your app, use `EntitlementCache`: it keeps the answers in your own process, so a check costs a request only when nothing fresh is cached.
+
+```ts
+import { EntitlementCache } from "@payrudder/sdk";
+
+const limits = new EntitlementCache(payrudder.customers, { ttlMs: 5_000 });
+
+export async function middleware(req: Request) {
+  const status = await limits.check(customerOf(req), "api_calls");
+  if (!status.allowed) return new Response("Quota reached", { status: 429 });
+}
+```
+
+- Within `ttlMs` (default 5 s) the cached answer is returned without a request.
+- For `staleMs` after that (default 30 s) the old answer is returned at once and a new one is fetched in the background.
+- Concurrent checks of the same customer and meter share one request; at most `maxEntries` answers are kept (default 10,000, least recently used dropped).
+- The trade-off is staleness: a customer who reaches a hard limit stays allowed until the answer is refreshed. Call `limits.invalidate(customer, meter)` after recording usage that matters, or lower `ttlMs`.
+- The cache lives in one process (one server, one edge isolate) and is not shared between instances.
+
 ## Errors
 
 Every failed call throws a `PayrudderError` built from the API's `Error` envelope:

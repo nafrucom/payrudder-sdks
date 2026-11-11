@@ -15,6 +15,8 @@ export {
 export type { ErrorDetail } from "./errors";
 export { EventsResource, MAX_EVENTS_PER_BATCH, MAX_BATCH_BYTES } from "./events";
 export type { IngestEvent } from "./events";
+export { EntitlementCache } from "./entitlement-cache";
+export type { EntitlementCacheOptions, EntitlementSource } from "./entitlement-cache";
 export { toBigInt } from "./int64";
 export { paginate } from "./pagination";
 export {
