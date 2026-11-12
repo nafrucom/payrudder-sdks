@@ -682,6 +682,29 @@ class EntitlementTerms(_EntitlementTermsRequired, total=False):
     mode: QuotaMode
 
 
+class _CustomerMemberRequired(TypedDict):
+    external_id: str
+    customer_external_id: str
+    role: Literal["owner", "member"]
+    can_manage_billing: bool
+
+
+class CustomerMember(_CustomerMemberRequired, total=False):
+    name: str
+    email: str
+    create_time: str
+    update_time: str
+
+
+class ListCustomerMembersResponse(TypedDict):
+    members: list[CustomerMember]
+
+
+class SetCustomerMemberRequest(TypedDict, total=False):
+    name: str
+    email: str
+
+
 class Plan(TypedDict):
     id: str
     code: str
@@ -2070,6 +2093,7 @@ class CreatedPaymentLink(TypedDict):
 
 class CreatePortalLinkRequest(TypedDict, total=False):
     expires_in_days: int
+    member_external_id: str
 
 
 class CreatePortalLinkResponse(TypedDict):

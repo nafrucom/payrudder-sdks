@@ -17,19 +17,19 @@ describe("configuration", () => {
 
   it("reads the key and base url from the environment", async () => {
     server = await startServer((_req, res) => json(res, 200, { id: "c1" }));
-    vi.stubEnv("PAYRUDDER_API_KEY", "qk_test_env");
+    vi.stubEnv("PAYRUDDER_API_KEY", "prk_test_env");
     vi.stubEnv("PAYRUDDER_BASE_URL", server.url + "/");
     await new Payrudder().customers.getCustomer("c1");
-    expect(server.requests[0]?.headers.authorization).toBe("Bearer qk_test_env");
+    expect(server.requests[0]?.headers.authorization).toBe("Bearer prk_test_env");
     expect(server.requests[0]?.url).toBe("/v1/customers/c1");
   });
 
   it("prefers explicit options over the environment", async () => {
     server = await startServer((_req, res) => json(res, 200, {}));
-    vi.stubEnv("PAYRUDDER_API_KEY", "qk_test_env");
+    vi.stubEnv("PAYRUDDER_API_KEY", "prk_test_env");
     vi.stubEnv("PAYRUDDER_BASE_URL", "http://127.0.0.1:1");
-    await new Payrudder({ apiKey: "qk_live_x", baseUrl: server.url }).customers.getCustomer("c1");
-    expect(server.requests[0]?.headers.authorization).toBe("Bearer qk_live_x");
+    await new Payrudder({ apiKey: "prk_live_x", baseUrl: server.url }).customers.getCustomer("c1");
+    expect(server.requests[0]?.headers.authorization).toBe("Bearer prk_live_x");
   });
 
   it("defaults the base url to the local gateway", async () => {
@@ -66,7 +66,7 @@ describe("requests", () => {
     const req = server.requests[0];
     expect(req?.method).toBe("POST");
     expect(req?.url).toBe("/v1/customers");
-    expect(req?.headers.authorization).toBe("Bearer qk_test_abcd1234_secret");
+    expect(req?.headers.authorization).toBe("Bearer prk_test_abcd1234_secret");
     expect(req?.headers["user-agent"]).toBe(`payrudder-typescript/${VERSION}`);
     expect(req?.headers["content-type"]).toBe("application/json");
     expect(JSON.parse(req?.body ?? "")).toEqual({ external_id: "cus_1", name: "Ada", email: "ada@example.com" });

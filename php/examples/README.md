@@ -5,7 +5,7 @@ Four small scripts: [send a usage event](send_usage.php), [create a customer](cr
 Nothing is published: require the SDK from this checkout as the [SDK's README](../README.md#install) shows (or run `composer install` here), then
 
 ```sh
-export PAYRUDDER_API_KEY=qk_test_...             # a sandbox key
+export PAYRUDDER_API_KEY=prk_test_...             # a sandbox key
 export PAYRUDDER_BASE_URL=http://localhost:42800 # the default
 php examples/send_usage.php
 ```

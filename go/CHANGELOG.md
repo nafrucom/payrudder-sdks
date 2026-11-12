@@ -14,4 +14,4 @@ Nothing has been published or tagged yet: the version stays `0.0.0` until the fi
 
 ### Security
 - `payrudder login` writes the stored key to a new file with a random name (created exclusively, mode 0600) and renames it over `config.json`; it no longer writes through `config.json.tmp`, so a link planted at that name is not followed.
-- The command line refuses to send a live key (`qk_live_`) over plain `http://` to any host but this machine (`localhost`, `127.0.0.1`, `::1`), at login and at every command; use `https://`.
+- The command line refuses to send a live key (`prk_live_`) over plain `http://` to any host but this machine (`localhost`, `127.0.0.1`, `::1`), at login and at every command; use `https://`.

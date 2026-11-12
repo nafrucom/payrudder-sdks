@@ -66,7 +66,7 @@ final class ServerTest extends TestCase
 
     private function client(float $timeout = 5.0, int $retries = 2): Client
     {
-        return new Client(apiKey: 'qk_test_server_secret', baseUrl: self::$base, timeout: $timeout, maxRetries: $retries);
+        return new Client(apiKey: 'prk_test_server_secret', baseUrl: self::$base, timeout: $timeout, maxRetries: $retries);
     }
 
     public function testRetriesA429AndWalksThePages(): void
@@ -127,7 +127,7 @@ final class ServerTest extends TestCase
 
     public function testRedirectsAreNotFollowed(): void
     {
-        $response = (new CurlTransport())->send(new HttpRequest('GET', self::$base . '/v1/redirect', ['Authorization' => 'Bearer qk_test_server_secret'], null, 5.0));
+        $response = (new CurlTransport())->send(new HttpRequest('GET', self::$base . '/v1/redirect', ['Authorization' => 'Bearer prk_test_server_secret'], null, 5.0));
 
         self::assertSame(302, $response->status);
         self::assertSame('http://127.0.0.1:1/steal', $response->header('Location'));

@@ -4,7 +4,7 @@ import { VERSION } from "./version";
 export const DEFAULT_BASE_URL = "http://localhost:42800";
 
 export interface PayrudderOptions {
-  /** `qk_test_...` or `qk_live_...`. Falls back to the `PAYRUDDER_API_KEY` environment variable. */
+  /** `prk_test_...` or `prk_live_...`. Falls back to the `PAYRUDDER_API_KEY` environment variable. */
   apiKey?: string;
   /** Falls back to `PAYRUDDER_BASE_URL`, then `http://localhost:42800`. */
   baseUrl?: string;

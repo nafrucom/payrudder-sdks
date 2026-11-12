@@ -34,7 +34,7 @@ func newTestClient(t *testing.T, h http.Handler, opts ...Option) (*Client, *reco
 	t.Helper()
 	ts := httptest.NewServer(h)
 	t.Cleanup(ts.Close)
-	all := append([]Option{WithAPIKey("qk_test_abcdefgh_secret"), WithBaseURL(ts.URL)}, opts...)
+	all := append([]Option{WithAPIKey("prk_test_abcdefgh_secret"), WithBaseURL(ts.URL)}, opts...)
 	c, err := New(all...)
 	if err != nil {
 		t.Fatal(err)

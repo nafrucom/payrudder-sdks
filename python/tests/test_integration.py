@@ -1,5 +1,5 @@
 """Optional smoke test against a running stack: skipped unless PAYRUDDER_API_KEY is set (and, if it is not the
-default, PAYRUDDER_BASE_URL). Use a qk_test_ key: the test writes to the sandbox."""
+default, PAYRUDDER_BASE_URL). Use a prk_test_ key: the test writes to the sandbox."""
 
 from __future__ import annotations
 

@@ -38,8 +38,8 @@ import (
 
 func main() {
 	// WithAPIKey and WithBaseURL default to $PAYRUDDER_API_KEY and $PAYRUDDER_BASE_URL
-	// (then http://localhost:42800). A qk_test_ key acts on the sandbox, a qk_live_ key on the live tenant.
-	client, err := payrudder.New(payrudder.WithAPIKey("qk_test_..."))
+	// (then http://localhost:42800). A prk_test_ key acts on the sandbox, a prk_live_ key on the live tenant.
+	client, err := payrudder.New(payrudder.WithAPIKey("prk_test_..."))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -267,7 +267,7 @@ or when the generated files are stale. Hand-written methods are `Events.IngestEv
 cd sdk/go
 GOWORK=off go vet ./... && GOWORK=off go test -race ./...
 (cd internal/contract && GOWORK=off go test -race ./...)
-PAYRUDDER_API_KEY=qk_test_... go test -run Integration ./...   # optional smoke test against a running stack
+PAYRUDDER_API_KEY=prk_test_... go test -run Integration ./...   # optional smoke test against a running stack
 ```
 
 The unit tests run against a local fake server; no network and no Payrudder stack are needed.

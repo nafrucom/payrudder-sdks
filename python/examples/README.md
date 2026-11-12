@@ -5,7 +5,7 @@ Four small programs: [send a usage event](send_usage.py), [create a customer](cr
 Nothing is published: install the SDK from this checkout (`pip install ./sdk/python`), then
 
 ```sh
-export PAYRUDDER_API_KEY=qk_test_...             # a sandbox key
+export PAYRUDDER_API_KEY=prk_test_...             # a sandbox key
 export PAYRUDDER_BASE_URL=http://localhost:42800 # the default
 python sdk/python/examples/send_usage.py
 ```

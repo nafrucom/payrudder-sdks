@@ -114,7 +114,7 @@ def test_lost_connection_is_not_retried_for_a_bare_post(client: Payrudder, gatew
 
 
 def test_refused_connection_is_retried_then_raised(sleeps: Sleeps) -> None:
-    c = Payrudder("qk_test_x_y", base_url="http://127.0.0.1:1")
+    c = Payrudder("prk_test_x_y", base_url="http://127.0.0.1:1")
     c._sleep = sleeps.sync
     with pytest.raises(APIConnectionError):
         c.customers.create_customer(new_customer("c"))  # never reached the server, so a POST may be retried

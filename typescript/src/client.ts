@@ -5,7 +5,7 @@ import { HttpTransport, resolveConfig, type PayrudderOptions } from "./transport
  * Client of the Payrudder tenant API (`/v1/*`).
  *
  * ```ts
- * const payrudder = new Payrudder({ apiKey: "qk_test_..." });
+ * const payrudder = new Payrudder({ apiKey: "prk_test_..." });
  * const customer = await payrudder.customers.getCustomer("cus_42");
  * ```
  */

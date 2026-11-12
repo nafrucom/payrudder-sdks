@@ -1,6 +1,6 @@
 """Send one usage event.
 
-PAYRUDDER_API_KEY (qk_test_... for the sandbox) and PAYRUDDER_BASE_URL are read from the environment.
+PAYRUDDER_API_KEY (prk_test_... for the sandbox) and PAYRUDDER_BASE_URL are read from the environment.
 """
 
 import sys

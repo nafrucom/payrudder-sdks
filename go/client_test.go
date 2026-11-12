@@ -22,28 +22,28 @@ func TestNewRequiresAnAPIKey(t *testing.T) {
 }
 
 func TestNewReadsTheEnvironment(t *testing.T) {
-	t.Setenv(EnvAPIKey, "qk_test_envkey")
+	t.Setenv(EnvAPIKey, "prk_test_envkey")
 	t.Setenv(EnvBaseURL, "https://api.example.test/")
 	c, err := New()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.apiKey != "qk_test_envkey" || c.baseURL != "https://api.example.test" {
+	if c.apiKey != "prk_test_envkey" || c.baseURL != "https://api.example.test" {
 		t.Fatalf("key %q base %q", c.apiKey, c.baseURL)
 	}
 	// An explicit option wins over the environment.
-	c, err = New(WithAPIKey("qk_live_x"), WithBaseURL("http://127.0.0.1:1"))
+	c, err = New(WithAPIKey("prk_live_x"), WithBaseURL("http://127.0.0.1:1"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.apiKey != "qk_live_x" || c.baseURL != "http://127.0.0.1:1" {
+	if c.apiKey != "prk_live_x" || c.baseURL != "http://127.0.0.1:1" {
 		t.Fatalf("key %q base %q", c.apiKey, c.baseURL)
 	}
 }
 
 func TestNewDefaults(t *testing.T) {
 	t.Setenv(EnvBaseURL, "")
-	c, err := New(WithAPIKey("qk_test_x"))
+	c, err := New(WithAPIKey("prk_test_x"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestRequestHeadersAndPath(t *testing.T) {
 	if cust.ExternalID != "a/b c" {
 		t.Fatalf("customer %+v", cust)
 	}
-	if got.Header.Get("Authorization") != "Bearer qk_test_abcdefgh_secret" {
+	if got.Header.Get("Authorization") != "Bearer prk_test_abcdefgh_secret" {
 		t.Errorf("authorization %q", got.Header.Get("Authorization"))
 	}
 	if got.Header.Get("User-Agent") != "custom/1" || got.Header.Get("Accept") != "application/json" {

@@ -33,7 +33,7 @@ func (c *cli) login(ctx context.Context, args []string) error {
 		key = c.getenv(payrudder.EnvAPIKey)
 	default:
 		// The prompt cannot hide what is typed (that needs a terminal library, and the CLI has no dependencies); --api-key-stdin avoids the echo.
-		fmt.Fprint(c.err, "API key (qk_test_... or qk_live_...): ")
+		fmt.Fprint(c.err, "API key (prk_test_... or prk_live_...): ")
 		line, err := c.readLine()
 		if err != nil {
 			return errors.New("no API key given")
@@ -41,8 +41,8 @@ func (c *cli) login(ctx context.Context, args []string) error {
 		key = line
 	}
 	key = strings.TrimSpace(key)
-	if (!strings.HasPrefix(key, "qk_test_") && !strings.HasPrefix(key, "qk_live_")) || strings.ContainsAny(key, " \t") {
-		return errors.New("that is not a Payrudder API key: it starts with qk_test_ (sandbox) or qk_live_ (live)")
+	if (!strings.HasPrefix(key, "prk_test_") && !strings.HasPrefix(key, "prk_live_")) || strings.ContainsAny(key, " \t") {
+		return errors.New("that is not a Payrudder API key: it starts with prk_test_ (sandbox) or prk_live_ (live)")
 	}
 
 	prev, _ := c.loadConfig()
@@ -72,7 +72,7 @@ func (c *cli) login(ctx context.Context, args []string) error {
 		return err
 	}
 	env := "live"
-	if strings.HasPrefix(key, "qk_test_") {
+	if strings.HasPrefix(key, "prk_test_") {
 		env = "sandbox"
 	}
 	fmt.Fprintf(c.out, "Signed in to %s with the %s key %s%s.\nStored in %s (readable by you only).\n", firstNonEmpty(baseURL, payrudder.DefaultBaseURL), env, maskKey(key), note, path)
@@ -95,7 +95,7 @@ func (c *cli) logout() error {
 	return nil
 }
 
-// maskKey shows the kind and the public prefix of a key (qk_test_ab12cd34_…), never the secret part.
+// maskKey shows the kind and the public prefix of a key (prk_test_ab12cd34_…), never the secret part.
 func maskKey(k string) string {
 	if parts := strings.Split(k, "_"); len(parts) == 4 {
 		return strings.Join(parts[:3], "_") + "_…"

@@ -919,6 +919,8 @@ export interface CreatePlanRequest {
 
 export interface CreatePortalLinkRequest {
   expires_in_days?: number;
+  /** The member of the customer the link is for (your own id of the person). The link is made only for the customer's billing owner: anybody else gets 403 `gateway.members.not_owner`. Leave it out when your application decides this itself. */
+  member_external_id?: string;
 }
 
 export interface CreatePortalLinkResponse {
@@ -1247,6 +1249,20 @@ export interface CustomerContact {
   customer_type?: "individual" | "business";
   /** The customer's mobile number in international form (+90 532 123 45 67 or 0090 532 123 45 67), stored as E.164. Omit to keep the stored number; send an empty string to clear it. */
   phone?: string;
+}
+
+export interface CustomerMember {
+  /** Your own id of the person. */
+  external_id: string;
+  customer_external_id: string;
+  name?: string;
+  email?: string;
+  /** `owner` is the one member who manages billing. */
+  role: "owner" | "member";
+  /** Whether this person may open the payment page, pay and change the card: true for the owner only. */
+  can_manage_billing: boolean;
+  create_time?: string;
+  update_time?: string;
 }
 
 export interface CustomerPayment {
@@ -2193,6 +2209,10 @@ export interface ListCustomerBlockEventsResponse {
   events: Array<CustomerBlockEvent>;
 }
 
+export interface ListCustomerMembersResponse {
+  members: Array<CustomerMember>;
+}
+
 export interface ListCustomerPaymentsQuery {
   /** How many invoices to read; there is no page_token, so a customer with more invoices cannot be listed completely */
   limit?: number;
@@ -3134,6 +3154,12 @@ export interface SetContractWithdrawalStatusRequestParams {
   note?: string;
   /** Accepting only: the amount to refund when the settings ask for a refund, in minor units; 0 or absent is whatever is left of the invoice. */
   refund_amount_minor?: Int64Input;
+}
+
+export interface SetCustomerMemberRequest {
+  name?: string;
+  /** A plain e-mail address, or empty. */
+  email?: string;
 }
 
 export interface SetDisputeHandledRequest {

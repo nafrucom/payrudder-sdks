@@ -62,7 +62,7 @@ export function apiError(
 export function clientFor(server: FakeServer, options: PayrudderOptions = {}): { client: Payrudder; delays: number[] } {
   const delays: number[] = [];
   const client = new Payrudder({
-    apiKey: "qk_test_abcd1234_secret",
+    apiKey: "prk_test_abcd1234_secret",
     baseUrl: server.url,
     sleep: (ms) => {
       delays.push(ms);

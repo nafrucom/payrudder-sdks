@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// TestIntegrationSmoke talks to a real gateway. It runs only when PAYRUDDER_API_KEY is set (use a qk_test_ key; the
+// TestIntegrationSmoke talks to a real gateway. It runs only when PAYRUDDER_API_KEY is set (use a prk_test_ key; the
 // address comes from PAYRUDDER_BASE_URL, default http://localhost:42800) and changes nothing.
 func TestIntegrationSmoke(t *testing.T) {
 	if os.Getenv(EnvAPIKey) == "" {

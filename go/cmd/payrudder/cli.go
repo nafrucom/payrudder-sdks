@@ -92,7 +92,7 @@ usage: payrudder <command> [flags]
   version                     the version of this program and of the SDK it is built on
 
 The key comes from $PAYRUDDER_API_KEY or from "payrudder login"; the gateway address from --base-url, $PAYRUDDER_BASE_URL or the login
-(default http://localhost:42800). A qk_test_ key acts on the sandbox, a qk_live_ key on live. "payrudder <command> -h" lists a command's flags.`
+(default http://localhost:42800). A prk_test_ key acts on the sandbox, a prk_live_ key on live. "payrudder <command> -h" lists a command's flags.`
 
 func (c *cli) dispatch(ctx context.Context, args []string) error {
 	if len(args) == 0 {
@@ -263,10 +263,10 @@ func (c *cli) client(baseFlag string) (*payrudder.Client, error) {
 	return c.newClient(key, firstNonEmpty(baseFlag, c.getenv(payrudder.EnvBaseURL), cfg.BaseURL))
 }
 
-// refuseLiveKeyInTheClear stops a live key (qk_live_) from being sent over plain http to anything but this machine: on the way anyone could read it. The address the
+// refuseLiveKeyInTheClear stops a live key (prk_live_) from being sent over plain http to anything but this machine: on the way anyone could read it. The address the
 // SDK falls back to (an empty base) is http://localhost, so it passes; so do localhost, *.localhost and a loopback address. A sandbox key may go over http.
 func refuseLiveKeyInTheClear(key, base string) error {
-	if !strings.HasPrefix(key, "qk_live_") || base == "" {
+	if !strings.HasPrefix(key, "prk_live_") || base == "" {
 		return nil
 	}
 	u, err := url.Parse(base)

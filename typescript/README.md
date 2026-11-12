@@ -32,7 +32,7 @@ Runnable programs (send a usage event, create a customer, list invoices, verify 
 import { Payrudder } from "@payrudder/sdk";
 
 const payrudder = new Payrudder({
-  apiKey: process.env.PAYRUDDER_API_KEY, // qk_test_... (sandbox) or qk_live_...
+  apiKey: process.env.PAYRUDDER_API_KEY, // prk_test_... (sandbox) or prk_live_...
   baseUrl: "http://localhost:42800", // default; PAYRUDDER_BASE_URL is read when not given
 });
 

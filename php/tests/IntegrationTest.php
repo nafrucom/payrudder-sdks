@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Smoke test against a running Payrudder stack. Skipped unless PAYRUDDER_API_KEY is set
- * (PAYRUDDER_BASE_URL defaults to http://localhost:42800). Use a qk_test_ key: it writes a customer.
+ * (PAYRUDDER_BASE_URL defaults to http://localhost:42800). Use a prk_test_ key: it writes a customer.
  */
 final class IntegrationTest extends TestCase
 {

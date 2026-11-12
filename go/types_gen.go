@@ -932,6 +932,10 @@ type CreatePlanRequest struct {
 // CreatePortalLinkRequest is the request body of CreatePortalLink.
 type CreatePortalLinkRequest struct {
 	ExpiresInDays *int `json:"expires_in_days,omitempty"`
+	// The member of the customer the link is for (your own id of the person). The link is made only for the
+	// customer's billing owner: anybody else gets 403 `gateway.members.not_owner`. Leave it out when your
+	// application decides this itself.
+	MemberExternalID string `json:"member_external_id,omitempty"`
 }
 
 // CreatePortalLinkResponse is the response of CreatePortalLink.
@@ -1308,6 +1312,21 @@ type CustomerContact struct {
 	// The customer's mobile number in international form (+90 532 123 45 67 or 0090 532 123 45 67), stored as
 	// E.164. Omit to keep the stored number; send an empty string to clear it.
 	Phone string `json:"phone,omitempty"`
+}
+
+// CustomerMember is an object of the API; see components.schemas.CustomerMember in api/openapi/v1.yaml.
+type CustomerMember struct {
+	// Your own id of the person.
+	ExternalID         string `json:"external_id"`
+	CustomerExternalID string `json:"customer_external_id"`
+	Name               string `json:"name,omitempty"`
+	Email              string `json:"email,omitempty"`
+	// `owner` is the one member who manages billing. One of: owner, member.
+	Role string `json:"role"`
+	// Whether this person may open the payment page, pay and change the card: true for the owner only.
+	CanManageBilling bool      `json:"can_manage_billing"`
+	CreateTime       time.Time `json:"create_time,omitempty"`
+	UpdateTime       time.Time `json:"update_time,omitempty"`
 }
 
 // CustomerPayment is an object of the API; see components.schemas.CustomerPayment in api/openapi/v1.yaml.
@@ -2086,6 +2105,11 @@ type ListCustomerBlockAppealsResponse struct {
 // ListCustomerBlockEventsResponse is the response of ListCustomerBlockEvents.
 type ListCustomerBlockEventsResponse struct {
 	Events []CustomerBlockEvent `json:"events"`
+}
+
+// ListCustomerMembersResponse is the response of ListCustomerMembers.
+type ListCustomerMembersResponse struct {
+	Members []CustomerMember `json:"members"`
 }
 
 // ListCustomerPaymentsResponse is the response of ListCustomerPayments.
@@ -2957,6 +2981,13 @@ type SetContractWithdrawalStatusRequest struct {
 	// Accepting only: the amount to refund when the settings ask for a refund, in minor units; 0 or absent is
 	// whatever is left of the invoice.
 	RefundAmountMinor *Int64 `json:"refund_amount_minor,omitempty"`
+}
+
+// SetCustomerMemberRequest is the request body of SetCustomerMember.
+type SetCustomerMemberRequest struct {
+	Name string `json:"name,omitempty"`
+	// A plain e-mail address, or empty.
+	Email string `json:"email,omitempty"`
 }
 
 // SetDisputeHandledRequest is the request body of SetDisputeHandled.

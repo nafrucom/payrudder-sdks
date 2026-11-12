@@ -28,7 +28,7 @@ final class Client extends ResourceHolder
     public const DEFAULT_BASE_URL = 'http://localhost:42800';
 
     /**
-     * @param string|null $apiKey `qk_test_...` or `qk_live_...`; defaults to $PAYRUDDER_API_KEY
+     * @param string|null $apiKey `prk_test_...` or `prk_live_...`; defaults to $PAYRUDDER_API_KEY
      * @param string|null $baseUrl defaults to $PAYRUDDER_BASE_URL, then http://localhost:42800
      * @param float $timeout seconds per attempt
      * @param int $maxRetries automatic retries after the first attempt (0 disables)

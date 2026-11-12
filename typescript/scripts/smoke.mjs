@@ -15,7 +15,7 @@ for (const [name, mod] of [
   assert.equal(typeof mod.verifyWebhook, "function", `${name}: verifyWebhook`);
   assert.equal(mod.VERSION, version, `${name}: VERSION`);
 
-  const client = new mod.Payrudder({ apiKey: "qk_test_smoke", baseUrl: "http://127.0.0.1:1" });
+  const client = new mod.Payrudder({ apiKey: "prk_test_smoke", baseUrl: "http://127.0.0.1:1" });
   assert.equal(typeof client.customers.createCustomer, "function", `${name}: customers.createCustomer`);
   assert.equal(typeof client.events.ingest, "function", `${name}: events.ingest`);
 

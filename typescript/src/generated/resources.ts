@@ -68,6 +68,7 @@ import type {
   CustomerBlockAppeal,
   CustomerCards,
   CustomerContact,
+  CustomerMember,
   CustomerTax,
   DecideCustomerBlockAppealRequest,
   DeletedCustomerCard,
@@ -156,6 +157,7 @@ import type {
   ListCreditPacksQuery,
   ListCustomerBlockAppealsResponse,
   ListCustomerBlockEventsResponse,
+  ListCustomerMembersResponse,
   ListCustomerPaymentsQuery,
   ListCustomerPaymentsResponse,
   ListCustomersQuery,
@@ -235,6 +237,7 @@ import type {
   SchedulePriceChangeResponse,
   SetContractSettingsRequest,
   SetContractWithdrawalStatusRequestParams,
+  SetCustomerMemberRequest,
   SetDisputeHandledRequest,
   SetInvoiceLogoRequest,
   SetInvoiceLogoResponse,
@@ -1289,6 +1292,64 @@ export class CustomersResource {
   }
 
   /**
+   * The people of a customer that is an organisation, the billing owner first
+   *
+   * A customer can be an organisation: a university that buys mailboxes has many people who use the product, and one of them pays. Members are
+   * those people as your application knows them (`external_id` is your own user id). Exactly one member can be the billing owner, the person
+   * who manages payment. Not paged: at most the first 1000 members are returned, the owner first.
+   *
+   * `GET /v1/customers/{external_id}/members`
+   */
+  listCustomerMembers(externalId: string, options?: RequestOptions): Promise<ListCustomerMembersResponse> {
+    return this.t.request<ListCustomerMembersResponse>({ method: "GET", path: `/v1/customers/${seg(externalId)}/members`, response: "json" }, options);
+  }
+
+  /**
+   * One member, and whether they may manage billing
+   *
+   * Ask this before you show your billing pages to a person. `can_manage_billing` is true for the customer's billing owner only.
+   *
+   * `GET /v1/customers/{external_id}/members/{member_id}`
+   */
+  getCustomerMember(externalId: string, memberId: string, options?: RequestOptions): Promise<CustomerMember> {
+    return this.t.request<CustomerMember>({ method: "GET", path: `/v1/customers/${seg(externalId)}/members/${seg(memberId)}`, response: "json" }, options);
+  }
+
+  /**
+   * Add a member to the customer, or change their name and e-mail
+   *
+   * `member_id` is your own id of the person. The first member of a customer becomes its billing owner; everybody added after is a member
+   * until ownership is handed to them. A member that exists keeps its role.
+   *
+   * `PUT /v1/customers/{external_id}/members/{member_id}`
+   */
+  setCustomerMember(externalId: string, memberId: string, body?: SetCustomerMemberRequest, options?: RequestOptions): Promise<CustomerMember> {
+    return this.t.request<CustomerMember>({ method: "PUT", path: `/v1/customers/${seg(externalId)}/members/${seg(memberId)}`, body, bodyKind: "json", response: "json" }, options);
+  }
+
+  /**
+   * Remove a member from the customer
+   *
+   * The billing owner can be removed only when nobody else is left (409 `plans.member.owner_must_transfer`). Hand ownership over first.
+   *
+   * `DELETE /v1/customers/{external_id}/members/{member_id}`
+   */
+  deleteCustomerMember(externalId: string, memberId: string, options?: RequestOptions): Promise<void> {
+    return this.t.request<void>({ method: "DELETE", path: `/v1/customers/${seg(externalId)}/members/${seg(memberId)}`, response: "none" }, options);
+  }
+
+  /**
+   * Hand the billing ownership of the customer to this member
+   *
+   * The owner until now stays as a member. Asking for the member who already is the owner changes nothing.
+   *
+   * `POST /v1/customers/{external_id}/members/{member_id}/make-owner`
+   */
+  makeCustomerOwner(externalId: string, memberId: string, options?: RequestOptions): Promise<CustomerMember> {
+    return this.t.request<CustomerMember>({ method: "POST", path: `/v1/customers/${seg(externalId)}/members/${seg(memberId)}/make-owner`, response: "json" }, options);
+  }
+
+  /**
    * What a customer can spend now
    *
    * The balance leaves out credits whose time has passed. `lots` shows where it comes from, the credits that expire first at the top.
@@ -1910,7 +1971,7 @@ export class PaymentLinksResource {
   /**
    * Make a payment link for an open invoice, or ad hoc for a fixed amount
    *
-   * `kind: invoice` (needs `invoice_id`, a finalized unpaid invoice) or `kind: adhoc` (needs `amount_minor`, optionally `currency` — the tenant's by default — `description` and a `customer_external_id`; the invoice is made when the customer first presses Continue). The token is returned once. `Idempotency-Key` (or `idempotency_key`) makes a retry return the link made the first time, without the token (`replayed: true`); the same key with other parameters is refused. Single-use links stop after one paid invoice; a reusable ad-hoc link makes one invoice per use.
+   * `kind: invoice` (needs `invoice_id`, a finalized unpaid invoice) or `kind: adhoc` (needs `amount_minor`, optionally `currency` - the tenant's by default - `description` and a `customer_external_id`; the invoice is made when the customer first presses Continue). The token is returned once. `Idempotency-Key` (or `idempotency_key`) makes a retry return the link made the first time, without the token (`replayed: true`); the same key with other parameters is refused. Single-use links stop after one paid invoice; a reusable ad-hoc link makes one invoice per use.
    *
    * `POST /v1/payment-links`
    */
@@ -2198,7 +2259,7 @@ export class SandboxResource {
   constructor(private readonly t: Transport) {}
 
   /**
-   * Sandbox only — close a period now and run the real billing flow
+   * Sandbox only - close a period now and run the real billing flow
    *
    * Lowers the period's cutoff to now + 5 s, then billing runs exactly as at month end: watermark (starting 30 s after
    * the new cutoff), rating, numbering (`SBX-…`) and the invoice saga with mock payments. Poll `GET /v1/invoices`.
@@ -2211,7 +2272,7 @@ export class SandboxResource {
   }
 
   /**
-   * Sandbox only — choose the mock payment outcome for a customer
+   * Sandbox only - choose the mock payment outcome for a customer
    *
    * `{"scenario": "declined"}` sets `pm_sandbox_declined`. Live keys get 403.
    *

@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const testKey = "qk_test_ab12cd34_s3cr3tS3cr3tS3cr3tS3cr3tS3cr3tS3"
+const testKey = "prk_test_ab12cd34_s3cr3tS3cr3tS3cr3tS3cr3tS3cr3tS3"
 
 // syncBuf is an output buffer the receiver goroutines and the test can both touch.
 type syncBuf struct {
@@ -166,7 +166,7 @@ func TestLoginStoresTheKeyOnlyAfterTheAPIAcceptedIt(t *testing.T) {
 	})
 
 	e.expect(0, testKey+"\n", "login", "--api-key-stdin")
-	contains(t, "stdout", e.out.String(), "sandbox key qk_test_ab12cd34_…", e.vars["PAYRUDDER_BASE_URL"], filepath.Join(e.dir, "config.json"))
+	contains(t, "stdout", e.out.String(), "sandbox key prk_test_ab12cd34_…", e.vars["PAYRUDDER_BASE_URL"], filepath.Join(e.dir, "config.json"))
 	lacks(t, "stdout", e.out.String(), "s3cr3t")
 	lacks(t, "stderr", e.errOut.String(), "s3cr3t")
 
@@ -198,7 +198,7 @@ func TestLoginAsksForTheKeyWhenNothingGivesIt(t *testing.T) {
 	delete(e.vars, "PAYRUDDER_API_KEY")
 	e.gw.json("GET /v1/meters", 200, map[string]any{"meters": []any{}})
 	e.expect(0, "  "+testKey+"  \n", "login")
-	contains(t, "prompt", e.errOut.String(), "API key (qk_test_... or qk_live_...):")
+	contains(t, "prompt", e.errOut.String(), "API key (prk_test_... or prk_live_...):")
 	if _, err := os.Stat(filepath.Join(e.dir, "config.json")); err != nil {
 		t.Error("the key was not stored")
 	}
@@ -247,7 +247,7 @@ func TestLoginNoVerifyDoesNotCallTheAPI(t *testing.T) {
 
 func TestStoredLoginIsUsedAndTheEnvironmentOverridesIt(t *testing.T) {
 	e := newEnv(t)
-	other := "qk_live_zz99yy88_" + strings.Repeat("a", 40)
+	other := "prk_live_zz99yy88_" + strings.Repeat("a", 40)
 	e.gw.json("GET /v1/customers", 200, map[string]any{"customers": []any{}, "next_page_token": ""})
 	delete(e.vars, "PAYRUDDER_API_KEY")
 	delete(e.vars, "PAYRUDDER_BASE_URL")
@@ -394,7 +394,7 @@ func TestLoginDoesNotFollowALinkPlantedAtTheTemporaryName(t *testing.T) {
 // A live key goes over https, or over http to this machine; a sandbox key may go over http. Checked at login (stored nothing, asked nothing) and on every command that
 // builds a client, from the environment or from the stored login.
 func TestALiveKeyIsNotSentOverPlainHTTPToAnotherHost(t *testing.T) {
-	live := "qk_live_zz99yy88_" + strings.Repeat("a", 40)
+	live := "prk_live_zz99yy88_" + strings.Repeat("a", 40)
 	for base, ok := range map[string]bool{
 		"https://api.example.com": true, "https://api.example.com:8443/base": true, "HTTPS://API.EXAMPLE.COM": true,
 		"http://localhost:42800": true, "http://LOCALHOST": true, "http://localhost.": true, "http://app.localhost:3000": true, "http://127.0.0.1:8000": true, "http://127.9.9.9": true,

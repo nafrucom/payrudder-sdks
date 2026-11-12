@@ -32,13 +32,13 @@ def test_version_is_the_one_in_pyproject() -> None:
 
 
 def test_api_key_and_base_url_come_from_the_environment(monkeypatch: pytest.MonkeyPatch, gateway: FakeGateway) -> None:
-    monkeypatch.setenv("PAYRUDDER_API_KEY", "qk_test_env_key")
+    monkeypatch.setenv("PAYRUDDER_API_KEY", "prk_test_env_key")
     monkeypatch.setenv("PAYRUDDER_BASE_URL", gateway.url + "/")
     gateway.script = [ok({"id": "1", "external_id": "c1"})]
     with Payrudder() as c:
         assert c.base_url == gateway.url
         c.customers.get_customer("c1")
-    assert gateway.requests[0].headers["authorization"] == "Bearer qk_test_env_key"
+    assert gateway.requests[0].headers["authorization"] == "Bearer prk_test_env_key"
 
 
 def test_missing_api_key_is_a_configuration_error(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -51,7 +51,7 @@ def test_missing_api_key_is_a_configuration_error(monkeypatch: pytest.MonkeyPatc
 
 def test_default_base_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("PAYRUDDER_BASE_URL", raising=False)
-    assert Payrudder("qk_test_x_y").base_url == "http://localhost:42800"
+    assert Payrudder("prk_test_x_y").base_url == "http://localhost:42800"
 
 
 def test_headers_path_and_query(client: Payrudder, gateway: FakeGateway) -> None:
@@ -61,7 +61,7 @@ def test_headers_path_and_query(client: Payrudder, gateway: FakeGateway) -> None
     assert req.method == "GET"
     assert req.path == "/v1/customers"
     assert req.query == {"page_size": "50", "page_token": "tok/1"}
-    assert req.headers["authorization"] == "Bearer qk_test_abcd1234_secret"
+    assert req.headers["authorization"] == "Bearer prk_test_abcd1234_secret"
     assert req.headers["user-agent"] == f"payrudder-python/{__version__}"
     assert req.headers["accept"] == "application/json"
 
@@ -213,7 +213,7 @@ def test_non_json_error_body_still_maps(client: Payrudder, gateway: FakeGateway)
 
 
 def test_connection_error(sleeps: object) -> None:
-    c = Payrudder("qk_test_x_y", base_url="http://127.0.0.1:1", max_retries=0)
+    c = Payrudder("prk_test_x_y", base_url="http://127.0.0.1:1", max_retries=0)
     with pytest.raises(APIConnectionError):
         c.customers.get_customer("c")
 
@@ -223,7 +223,7 @@ def test_injected_transport(sleeps: object) -> None:
         assert request.url.path == "/v1/customers/c"
         return httpx.Response(200, json={"id": "1", "external_id": "c"})
 
-    c = Payrudder("qk_test_x_y", transport=httpx.MockTransport(handler))
+    c = Payrudder("prk_test_x_y", transport=httpx.MockTransport(handler))
     assert c.customers.get_customer("c")["external_id"] == "c"
     with pytest.raises(ValueError, match="not both"):
         Payrudder("k", transport=httpx.MockTransport(handler), http_client=httpx.Client())

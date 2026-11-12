@@ -3,7 +3,7 @@
 Four small programs, one directory each: [send a usage event](send-usage/main.go), [create a customer](create-customer/main.go), [list invoices](list-invoices/main.go) and [verify a webhook](verify-webhook/main.go).
 
 ```sh
-export PAYRUDDER_API_KEY=qk_test_...             # a sandbox key
+export PAYRUDDER_API_KEY=prk_test_...             # a sandbox key
 export PAYRUDDER_BASE_URL=http://localhost:42800 # the default
 cd sdk/go && go run ./examples/send-usage
 ```

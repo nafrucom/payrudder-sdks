@@ -52,7 +52,7 @@ def methods_of(client: Any) -> dict[str, set[str]]:
 
 @pytest.mark.parametrize("cls", [Payrudder, AsyncPayrudder])
 def test_every_operation_has_a_method_and_nothing_else_does(cls: Any) -> None:
-    client = cls("qk_test_x_y")
+    client = cls("prk_test_x_y")
     have = methods_of(client)
     expected = spec_operations()
     assert expected, "no /v1 operations found in the spec"
@@ -91,6 +91,6 @@ def test_every_iterator_walks_a_paginated_list() -> None:
             names = [p.get("name") for p in item["get"].get("parameters", []) if isinstance(p, dict)]
             if "page_token" in names:
                 paged.add(snake(item["get"]["operationId"]))
-    client = Payrudder("qk_test_x_y")
+    client = Payrudder("prk_test_x_y")
     iters = {n for names in methods_of(client).values() for n in names if n.startswith("iter_")}
     assert len(iters) == len(paged) > 10

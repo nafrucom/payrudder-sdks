@@ -25,7 +25,7 @@ func loadSpec(t *testing.T) *Spec {
 // clientMethods returns "Service.Method" for every exported method of every resource namespace of the client.
 func clientMethods(t *testing.T) map[string]bool {
 	t.Helper()
-	c, err := payrudder.New(payrudder.WithAPIKey("qk_test_x"))
+	c, err := payrudder.New(payrudder.WithAPIKey("prk_test_x"))
 	if err != nil {
 		t.Fatal(err)
 	}

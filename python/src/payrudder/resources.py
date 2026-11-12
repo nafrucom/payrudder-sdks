@@ -290,6 +290,41 @@ class CustomersResource:
         """
         self._client._request("DELETE", f"/v1/customers/{_p(external_id)}/entitlement-overrides/{_p(meter)}", returns="none", options=options)
 
+    def list_customer_members(self, external_id: str, *, options: RequestOptions | None = None) -> m.ListCustomerMembersResponse:
+        """The people of a customer that is an organisation, the billing owner first.
+
+        ``GET /v1/customers/{external_id}/members``
+        """
+        return cast("m.ListCustomerMembersResponse", self._client._request("GET", f"/v1/customers/{_p(external_id)}/members", options=options))
+
+    def get_customer_member(self, external_id: str, member_id: str, *, options: RequestOptions | None = None) -> m.CustomerMember:
+        """One member, and whether they may manage billing.
+
+        ``GET /v1/customers/{external_id}/members/{member_id}``
+        """
+        return cast("m.CustomerMember", self._client._request("GET", f"/v1/customers/{_p(external_id)}/members/{_p(member_id)}", options=options))
+
+    def set_customer_member(self, external_id: str, member_id: str, body: m.SetCustomerMemberRequest | None = None, *, options: RequestOptions | None = None) -> m.CustomerMember:
+        """Add a member to the customer, or change their name and e-mail.
+
+        ``PUT /v1/customers/{external_id}/members/{member_id}``
+        """
+        return cast("m.CustomerMember", self._client._request("PUT", f"/v1/customers/{_p(external_id)}/members/{_p(member_id)}", body=body, options=options))
+
+    def delete_customer_member(self, external_id: str, member_id: str, *, options: RequestOptions | None = None) -> None:
+        """Remove a member from the customer.
+
+        ``DELETE /v1/customers/{external_id}/members/{member_id}``
+        """
+        self._client._request("DELETE", f"/v1/customers/{_p(external_id)}/members/{_p(member_id)}", returns="none", options=options)
+
+    def make_customer_owner(self, external_id: str, member_id: str, *, options: RequestOptions | None = None) -> m.CustomerMember:
+        """Hand the billing ownership of the customer to this member.
+
+        ``POST /v1/customers/{external_id}/members/{member_id}/make-owner``
+        """
+        return cast("m.CustomerMember", self._client._request("POST", f"/v1/customers/{_p(external_id)}/members/{_p(member_id)}/make-owner", options=options))
+
     def get_credit_balance(self, external_id: str, *, options: RequestOptions | None = None) -> m.CreditBalance:
         """What a customer can spend now.
 
@@ -1905,14 +1940,14 @@ class SandboxResource:
         self._client = client
 
     def sandbox_close_period(self, body: m.SandboxClosePeriodRequest | None = None, *, options: RequestOptions | None = None) -> m.BillingRun:
-        """Sandbox only — close a period now and run the real billing flow.
+        """Sandbox only - close a period now and run the real billing flow.
 
         ``POST /v1/sandbox/close-period``
         """
         return cast("m.BillingRun", self._client._request("POST", "/v1/sandbox/close-period", body=body, options=options))
 
     def set_payment_scenario(self, external_id: str, body: m.SetPaymentScenarioRequest, *, options: RequestOptions | None = None) -> m.Customer:
-        """Sandbox only — choose the mock payment outcome for a customer.
+        """Sandbox only - choose the mock payment outcome for a customer.
 
         ``POST /v1/sandbox/customers/{external_id}/payment-scenario``
         """
@@ -2299,6 +2334,41 @@ class AsyncCustomersResource:
         ``DELETE /v1/customers/{external_id}/entitlement-overrides/{meter}``
         """
         await self._client._request("DELETE", f"/v1/customers/{_p(external_id)}/entitlement-overrides/{_p(meter)}", returns="none", options=options)
+
+    async def list_customer_members(self, external_id: str, *, options: RequestOptions | None = None) -> m.ListCustomerMembersResponse:
+        """The people of a customer that is an organisation, the billing owner first.
+
+        ``GET /v1/customers/{external_id}/members``
+        """
+        return cast("m.ListCustomerMembersResponse", await self._client._request("GET", f"/v1/customers/{_p(external_id)}/members", options=options))
+
+    async def get_customer_member(self, external_id: str, member_id: str, *, options: RequestOptions | None = None) -> m.CustomerMember:
+        """One member, and whether they may manage billing.
+
+        ``GET /v1/customers/{external_id}/members/{member_id}``
+        """
+        return cast("m.CustomerMember", await self._client._request("GET", f"/v1/customers/{_p(external_id)}/members/{_p(member_id)}", options=options))
+
+    async def set_customer_member(self, external_id: str, member_id: str, body: m.SetCustomerMemberRequest | None = None, *, options: RequestOptions | None = None) -> m.CustomerMember:
+        """Add a member to the customer, or change their name and e-mail.
+
+        ``PUT /v1/customers/{external_id}/members/{member_id}``
+        """
+        return cast("m.CustomerMember", await self._client._request("PUT", f"/v1/customers/{_p(external_id)}/members/{_p(member_id)}", body=body, options=options))
+
+    async def delete_customer_member(self, external_id: str, member_id: str, *, options: RequestOptions | None = None) -> None:
+        """Remove a member from the customer.
+
+        ``DELETE /v1/customers/{external_id}/members/{member_id}``
+        """
+        await self._client._request("DELETE", f"/v1/customers/{_p(external_id)}/members/{_p(member_id)}", returns="none", options=options)
+
+    async def make_customer_owner(self, external_id: str, member_id: str, *, options: RequestOptions | None = None) -> m.CustomerMember:
+        """Hand the billing ownership of the customer to this member.
+
+        ``POST /v1/customers/{external_id}/members/{member_id}/make-owner``
+        """
+        return cast("m.CustomerMember", await self._client._request("POST", f"/v1/customers/{_p(external_id)}/members/{_p(member_id)}/make-owner", options=options))
 
     async def get_credit_balance(self, external_id: str, *, options: RequestOptions | None = None) -> m.CreditBalance:
         """What a customer can spend now.
@@ -3935,14 +4005,14 @@ class AsyncSandboxResource:
         self._client = client
 
     async def sandbox_close_period(self, body: m.SandboxClosePeriodRequest | None = None, *, options: RequestOptions | None = None) -> m.BillingRun:
-        """Sandbox only — close a period now and run the real billing flow.
+        """Sandbox only - close a period now and run the real billing flow.
 
         ``POST /v1/sandbox/close-period``
         """
         return cast("m.BillingRun", await self._client._request("POST", "/v1/sandbox/close-period", body=body, options=options))
 
     async def set_payment_scenario(self, external_id: str, body: m.SetPaymentScenarioRequest, *, options: RequestOptions | None = None) -> m.Customer:
-        """Sandbox only — choose the mock payment outcome for a customer.
+        """Sandbox only - choose the mock payment outcome for a customer.
 
         ``POST /v1/sandbox/customers/{external_id}/payment-scenario``
         """

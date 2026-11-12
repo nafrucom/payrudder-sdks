@@ -4,7 +4,7 @@
 // resource namespaces (client.Customers, client.Events, client.Invoices, ...), and handle failures with errors.As on
 // *Error:
 //
-//	client, err := payrudder.New(payrudder.WithAPIKey("qk_test_..."))
+//	client, err := payrudder.New(payrudder.WithAPIKey("prk_test_..."))
 //	cust, err := client.Customers.GetCustomer(ctx, "cus_42")
 //	var perr *payrudder.Error
 //	if errors.As(err, &perr) && perr.Kind == payrudder.KindNotFound { ... }
@@ -69,7 +69,7 @@ type Client struct {
 // Option configures New.
 type Option func(*Client)
 
-// WithAPIKey sets the API key (qk_test_... or qk_live_...). The default is $PAYRUDDER_API_KEY.
+// WithAPIKey sets the API key (prk_test_... or prk_live_...). The default is $PAYRUDDER_API_KEY.
 func WithAPIKey(key string) Option { return func(c *Client) { c.apiKey = key } }
 
 // WithBaseURL sets the gateway address. The default is $PAYRUDDER_BASE_URL, else http://localhost:42800.

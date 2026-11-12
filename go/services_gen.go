@@ -1628,6 +1628,72 @@ func (s *CustomersService) GetEntitlement(ctx context.Context, externalID string
 	return &out, nil
 }
 
+// ListCustomerMembers: The people of a customer that is an organisation, the billing owner first (GET
+// /v1/customers/{external_id}/members).
+//
+// A customer can be an organisation: a university that buys mailboxes has many people who use the product, and
+// one of them pays. Members are those people as your application knows them (`external_id` is your own user
+// id). Exactly one member can be the billing owner, the person who manages payment. Not paged: at most the
+// first 1000 members are returned, the owner first.
+func (s *CustomersService) ListCustomerMembers(ctx context.Context, externalID string, opts ...RequestOption) (*ListCustomerMembersResponse, error) {
+	var out ListCustomerMembersResponse
+	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/customers/" + url.PathEscape(externalID) + "/members", query: nil, body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// DeleteCustomerMember: Remove a member from the customer (DELETE
+// /v1/customers/{external_id}/members/{member_id}).
+//
+// The billing owner can be removed only when nobody else is left (409 `plans.member.owner_must_transfer`). Hand
+// ownership over first.
+func (s *CustomersService) DeleteCustomerMember(ctx context.Context, externalID string, memberID string, opts ...RequestOption) error {
+	return s.c.do(ctx, requestSpec{method: http.MethodDelete, path: "/v1/customers/" + url.PathEscape(externalID) + "/members/" + url.PathEscape(memberID), query: nil, body: nil}, nil, opts)
+}
+
+// GetCustomerMember: One member, and whether they may manage billing (GET
+// /v1/customers/{external_id}/members/{member_id}).
+//
+// Ask this before you show your billing pages to a person. `can_manage_billing` is true for the customer's
+// billing owner only.
+func (s *CustomersService) GetCustomerMember(ctx context.Context, externalID string, memberID string, opts ...RequestOption) (*CustomerMember, error) {
+	var out CustomerMember
+	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/customers/" + url.PathEscape(externalID) + "/members/" + url.PathEscape(memberID), query: nil, body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// SetCustomerMember: Add a member to the customer, or change their name and e-mail (PUT
+// /v1/customers/{external_id}/members/{member_id}).
+//
+// `member_id` is your own id of the person. The first member of a customer becomes its billing owner; everybody
+// added after is a member until ownership is handed to them. A member that exists keeps its role.
+func (s *CustomersService) SetCustomerMember(ctx context.Context, externalID string, memberID string, req *SetCustomerMemberRequest, opts ...RequestOption) (*CustomerMember, error) {
+	var body any
+	if req != nil {
+		body = req
+	}
+	var out CustomerMember
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPut, path: "/v1/customers/" + url.PathEscape(externalID) + "/members/" + url.PathEscape(memberID), query: nil, body: body}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// MakeCustomerOwner: Hand the billing ownership of the customer to this member (POST
+// /v1/customers/{external_id}/members/{member_id}/make-owner).
+//
+// The owner until now stays as a member. Asking for the member who already is the owner changes nothing.
+func (s *CustomersService) MakeCustomerOwner(ctx context.Context, externalID string, memberID string, opts ...RequestOption) (*CustomerMember, error) {
+	var out CustomerMember
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/customers/" + url.PathEscape(externalID) + "/members/" + url.PathEscape(memberID) + "/make-owner", query: nil, body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // SetPaymentMethod: Set the customer's PSP token (sandbox accepts only pm_sandbox_* tokens) (PUT
 // /v1/customers/{external_id}/payment-method).
 func (s *CustomersService) SetPaymentMethod(ctx context.Context, externalID string, req *SetPaymentMethodRequest, opts ...RequestOption) (*Customer, error) {
@@ -2513,8 +2579,8 @@ func (s *PaymentLinksService) ListPaymentLinksAll(ctx context.Context, params *L
 // /v1/payment-links).
 //
 // `kind: invoice` (needs `invoice_id`, a finalized unpaid invoice) or `kind: adhoc` (needs `amount_minor`,
-// optionally `currency` — the tenant's by default — `description` and a `customer_external_id`; the invoice
-// is made when the customer first presses Continue). The token is returned once. `Idempotency-Key` (or
+// optionally `currency` - the tenant's by default - `description` and a `customer_external_id`; the invoice is
+// made when the customer first presses Continue). The token is returned once. `Idempotency-Key` (or
 // `idempotency_key`) makes a retry return the link made the first time, without the token (`replayed: true`);
 // the same key with other parameters is refused. Single-use links stop after one paid invoice; a reusable
 // ad-hoc link makes one invoice per use.
@@ -2911,7 +2977,7 @@ func (s *RoutingRulesService) PreviewRouting(ctx context.Context, req *PreviewRo
 // SandboxService is the sandbox namespace of the API.
 type SandboxService service
 
-// SandboxClosePeriod: Sandbox only — close a period now and run the real billing flow (POST
+// SandboxClosePeriod: Sandbox only - close a period now and run the real billing flow (POST
 // /v1/sandbox/close-period).
 //
 // Lowers the period's cutoff to now + 5 s, then billing runs exactly as at month end: watermark (starting 30 s
@@ -2929,7 +2995,7 @@ func (s *SandboxService) SandboxClosePeriod(ctx context.Context, req *SandboxClo
 	return &out, nil
 }
 
-// SetPaymentScenario: Sandbox only — choose the mock payment outcome for a customer (POST
+// SetPaymentScenario: Sandbox only - choose the mock payment outcome for a customer (POST
 // /v1/sandbox/customers/{external_id}/payment-scenario).
 //
 // `{"scenario": "declined"}` sets `pm_sandbox_declined`. Live keys get 403.

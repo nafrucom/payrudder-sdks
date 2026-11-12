@@ -31,6 +31,7 @@ use Payrudder\Model\Customer;
 use Payrudder\Model\CustomerBlockAppeal;
 use Payrudder\Model\CustomerCards;
 use Payrudder\Model\CustomerContact;
+use Payrudder\Model\CustomerMember;
 use Payrudder\Model\CustomerTax;
 use Payrudder\Model\DecideCustomerBlockAppealRequest;
 use Payrudder\Model\DeletedCustomerCard;
@@ -44,6 +45,7 @@ use Payrudder\Model\GrantCustomerCouponResponse;
 use Payrudder\Model\ListContractAcceptancesResponse;
 use Payrudder\Model\ListCustomerBlockAppealsResponse;
 use Payrudder\Model\ListCustomerBlockEventsResponse;
+use Payrudder\Model\ListCustomerMembersResponse;
 use Payrudder\Model\ListCustomerPaymentsResponse;
 use Payrudder\Model\ListCustomersResponse;
 use Payrudder\Model\ListEntitlementOverridesResponse;
@@ -52,6 +54,7 @@ use Payrudder\Model\PaymentMethodSetup;
 use Payrudder\Model\RecordContractAcceptanceRequest;
 use Payrudder\Model\RecordContractAcceptanceResponse;
 use Payrudder\Model\RevokePortalLinksResponse;
+use Payrudder\Model\SetCustomerMemberRequest;
 use Payrudder\Model\SetPaymentMethodRequest;
 use Payrudder\Model\UpcomingInvoice;
 use Payrudder\RequestOptions;
@@ -512,6 +515,76 @@ final class CustomersResource extends AbstractResource
     public function deleteEntitlementOverride(string $externalId, string $meter, ?RequestOptions $options = null): void
     {
         $this->callVoid('DELETE', '/v1/customers/' . rawurlencode($externalId) . '/entitlement-overrides/' . rawurlencode($meter), [], null, $options);
+    }
+
+    /**
+     * The people of a customer that is an organisation, the billing owner first (GET /v1/customers/{external_id}/members).
+     *
+     * @param string $externalId
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function listCustomerMembers(string $externalId, ?RequestOptions $options = null): ListCustomerMembersResponse
+    {
+        return ListCustomerMembersResponse::fromArray($this->call('GET', '/v1/customers/' . rawurlencode($externalId) . '/members', [], null, $options));
+    }
+
+    /**
+     * One member, and whether they may manage billing (GET /v1/customers/{external_id}/members/{member_id}).
+     *
+     * @param string $externalId
+     * @param string $memberId
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function getCustomerMember(string $externalId, string $memberId, ?RequestOptions $options = null): CustomerMember
+    {
+        return CustomerMember::fromArray($this->call('GET', '/v1/customers/' . rawurlencode($externalId) . '/members/' . rawurlencode($memberId), [], null, $options));
+    }
+
+    /**
+     * Add a member to the customer, or change their name and e-mail (PUT /v1/customers/{external_id}/members/{member_id}).
+     *
+     * @param string $externalId
+     * @param string $memberId
+     * @param SetCustomerMemberRequest|array<string,mixed>|null $body
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function setCustomerMember(string $externalId, string $memberId, SetCustomerMemberRequest|array|null $body = null, ?RequestOptions $options = null): CustomerMember
+    {
+        return CustomerMember::fromArray($this->call('PUT', '/v1/customers/' . rawurlencode($externalId) . '/members/' . rawurlencode($memberId), [], $body === null ? null : Cast::body($body), $options));
+    }
+
+    /**
+     * Remove a member from the customer (DELETE /v1/customers/{external_id}/members/{member_id}).
+     *
+     * @param string $externalId
+     * @param string $memberId
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function deleteCustomerMember(string $externalId, string $memberId, ?RequestOptions $options = null): void
+    {
+        $this->callVoid('DELETE', '/v1/customers/' . rawurlencode($externalId) . '/members/' . rawurlencode($memberId), [], null, $options);
+    }
+
+    /**
+     * Hand the billing ownership of the customer to this member (POST /v1/customers/{external_id}/members/{member_id}/make-owner).
+     *
+     * @param string $externalId
+     * @param string $memberId
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function makeCustomerOwner(string $externalId, string $memberId, ?RequestOptions $options = null): CustomerMember
+    {
+        return CustomerMember::fromArray($this->call('POST', '/v1/customers/' . rawurlencode($externalId) . '/members/' . rawurlencode($memberId) . '/make-owner', [], null, $options));
     }
 
     /**

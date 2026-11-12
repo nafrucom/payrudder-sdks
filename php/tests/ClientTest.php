@@ -30,7 +30,7 @@ final class ClientTest extends TestCase
         $r = $this->transport->requests[0];
         self::assertSame('GET', $r->method);
         self::assertSame('https://api.example.test/v1/meters', $r->url);
-        self::assertSame('Bearer qk_test_abcdefgh_secret', $r->headers['Authorization']);
+        self::assertSame('Bearer prk_test_abcdefgh_secret', $r->headers['Authorization']);
         self::assertSame('payrudder-php/' . Client::VERSION, $r->headers['User-Agent']);
         self::assertSame('application/json', $r->headers['Accept']);
         self::assertArrayNotHasKey('Content-Type', $r->headers);
@@ -49,7 +49,7 @@ final class ClientTest extends TestCase
 
     public function testEnvironmentVariablesAreUsedWhenNothingIsPassed(): void
     {
-        putenv('PAYRUDDER_API_KEY=qk_live_envkey_secret');
+        putenv('PAYRUDDER_API_KEY=prk_live_envkey_secret');
         putenv('PAYRUDDER_BASE_URL=https://env.example.test///');
         try {
             $t = new F();
@@ -57,7 +57,7 @@ final class ClientTest extends TestCase
             (new Client(transport: $t))->meters->listMeters();
 
             self::assertSame('https://env.example.test/v1/meters', $t->requests[0]->url);
-            self::assertSame('Bearer qk_live_envkey_secret', $t->requests[0]->headers['Authorization']);
+            self::assertSame('Bearer prk_live_envkey_secret', $t->requests[0]->headers['Authorization']);
         } finally {
             putenv('PAYRUDDER_API_KEY');
             putenv('PAYRUDDER_BASE_URL');

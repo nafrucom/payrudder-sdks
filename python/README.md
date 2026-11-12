@@ -12,7 +12,7 @@ Python client for the [Payrudder](https://payrudder.com) tenant API (`/v1/*`) an
   a timestamp or nested object that is not set is `None`; a request object that is also a response has a twin without the server-filled fields
   (`AddressInput`, `CouponInput`, `PriceInput`, ...).
 
-Scope: the tenant API authenticated with an API key (`qk_test_...` for the sandbox, `qk_live_...` for live). The operator
+Scope: the tenant API authenticated with an API key (`prk_test_...` for the sandbox, `prk_live_...` for live). The operator
 (`/admin/v1`) and console (`/app/v1`, `/auth`) routes are not part of this SDK.
 
 Runnable programs (send a usage event, create a customer, list invoices, verify a webhook) are in [`examples/`](examples/README.md).
@@ -22,7 +22,7 @@ Runnable programs (send a usage event, create a customer, list invoices, verify 
 ```python
 from payrudder import Payrudder
 
-client = Payrudder(api_key="qk_test_...", base_url="http://localhost:42800")
+client = Payrudder(api_key="prk_test_...", base_url="http://localhost:42800")
 # or set PAYRUDDER_API_KEY and PAYRUDDER_BASE_URL and call Payrudder()
 
 client.customers.create_customer({"external_id": "cus_42", "name": "Acme", "email": "billing@acme.test"})
@@ -195,7 +195,7 @@ python -m venv .venv && .venv/bin/pip install -e '.[dev]'
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 .venv/bin/mypy                       # strict
 .venv/bin/pytest                     # unit tests against a local fake gateway; no network, no stack needed
-PAYRUDDER_API_KEY=qk_test_... .venv/bin/pytest tests/test_integration.py   # optional smoke test against a running stack
+PAYRUDDER_API_KEY=prk_test_... .venv/bin/pytest tests/test_integration.py   # optional smoke test against a running stack
 .venv/bin/python -m build            # sdist and wheel in dist/
 ```
 

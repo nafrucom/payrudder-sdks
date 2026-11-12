@@ -5,7 +5,7 @@ Four small programs: [send a usage event](send-usage.ts), [create a customer](cr
 The SDK is not published: build it from this checkout and install the tarball in your project (see [Install](../README.md#install-from-the-repository)). Then copy an example in and run it, for example with [tsx](https://tsx.is) (`npx tsx send-usage.ts`):
 
 ```sh
-export PAYRUDDER_API_KEY=qk_test_...            # a sandbox key
+export PAYRUDDER_API_KEY=prk_test_...            # a sandbox key
 export PAYRUDDER_BASE_URL=http://localhost:42800 # the default
 npx tsx send-usage.ts
 ```

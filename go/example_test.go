@@ -16,7 +16,7 @@ import (
 // These examples are compiled, not run: they need a gateway.
 
 func ExampleClient_ingest() {
-	client, err := payrudder.New(payrudder.WithAPIKey("qk_test_..."))
+	client, err := payrudder.New(payrudder.WithAPIKey("prk_test_..."))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func ExampleClient_ingest() {
 }
 
 func ExampleError() {
-	client, _ := payrudder.New(payrudder.WithAPIKey("qk_test_..."))
+	client, _ := payrudder.New(payrudder.WithAPIKey("prk_test_..."))
 	_, err := client.Customers.GetCustomer(context.Background(), "cus_404")
 	var perr *payrudder.Error
 	if errors.As(err, &perr) && perr.Kind == payrudder.KindNotFound {
@@ -43,7 +43,7 @@ func ExampleError() {
 }
 
 func ExampleCustomersService_ListCustomersAll() {
-	client, _ := payrudder.New(payrudder.WithAPIKey("qk_test_..."))
+	client, _ := payrudder.New(payrudder.WithAPIKey("prk_test_..."))
 	for cust, err := range client.Customers.ListCustomersAll(context.Background(), &payrudder.ListCustomersParams{PageSize: payrudder.Ptr(100)}) {
 		if err != nil {
 			log.Fatal(err)

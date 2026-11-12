@@ -151,7 +151,7 @@ def sleeps() -> Sleeps:
 
 @pytest.fixture
 def client(gateway: FakeGateway, sleeps: Sleeps) -> Iterator[Payrudder]:
-    c = Payrudder("qk_test_abcd1234_secret", base_url=gateway.url)
+    c = Payrudder("prk_test_abcd1234_secret", base_url=gateway.url)
     c._sleep = sleeps.sync
     yield c
     c.close()
@@ -159,7 +159,7 @@ def client(gateway: FakeGateway, sleeps: Sleeps) -> Iterator[Payrudder]:
 
 @pytest.fixture
 async def aclient(gateway: FakeGateway, sleeps: Sleeps) -> AsyncIterator[AsyncPayrudder]:
-    c = AsyncPayrudder("qk_test_abcd1234_secret", base_url=gateway.url)
+    c = AsyncPayrudder("prk_test_abcd1234_secret", base_url=gateway.url)
     c._sleep = sleeps.asynchronous
     yield c
     await c.aclose()

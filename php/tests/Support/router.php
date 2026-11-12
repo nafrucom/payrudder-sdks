@@ -11,7 +11,7 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 header('Content-Type: application/json');
 header('X-Request-Id: srv-1');
 
-if (($_SERVER['HTTP_AUTHORIZATION'] ?? '') !== 'Bearer qk_test_server_secret') {
+if (($_SERVER['HTTP_AUTHORIZATION'] ?? '') !== 'Bearer prk_test_server_secret') {
     http_response_code(401);
     echo '{"error":{"code":"UNAUTHENTICATED","key":"gateway.auth.invalid_key","message":"bad key"}}';
 

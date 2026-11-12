@@ -1,6 +1,6 @@
 import { Payrudder } from "@payrudder/sdk";
 
-// PAYRUDDER_API_KEY (qk_test_... for the sandbox) and PAYRUDDER_BASE_URL are read from the environment.
+// PAYRUDDER_API_KEY (prk_test_... for the sandbox) and PAYRUDDER_BASE_URL are read from the environment.
 const payrudder = new Payrudder();
 
 const [result] = await payrudder.events.ingest([

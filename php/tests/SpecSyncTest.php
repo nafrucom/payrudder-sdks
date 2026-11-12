@@ -51,7 +51,7 @@ final class SpecSyncTest extends TestCase
     private static function clientMethods(): array
     {
         $out = [];
-        $client = new Client(apiKey: 'qk_test_x', baseUrl: 'http://localhost');
+        $client = new Client(apiKey: 'prk_test_x', baseUrl: 'http://localhost');
         foreach ((new ReflectionObject($client))->getProperties(ReflectionProperty::IS_PUBLIC) as $prop) {
             $resource = $prop->getValue($client);
             self::assertIsObject($resource);

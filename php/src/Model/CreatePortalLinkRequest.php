@@ -16,9 +16,11 @@ final class CreatePortalLinkRequest implements RequestBody
 {
     /**
      * @param int|null $expiresInDays
+     * @param string|null $memberExternalId
      */
     public function __construct(
         public readonly ?int $expiresInDays = null,
+        public readonly ?string $memberExternalId = null,
     ) {}
 
     /**
@@ -28,6 +30,7 @@ final class CreatePortalLinkRequest implements RequestBody
     {
         return Cast::compact([
             'expires_in_days' => $this->expiresInDays,
+            'member_external_id' => $this->memberExternalId,
         ]);
     }
 }

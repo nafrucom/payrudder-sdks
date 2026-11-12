@@ -18,11 +18,11 @@ from .types import RequestOptions
 class Payrudder(Resources):
     """Synchronous client for the Payrudder tenant API (``/v1/*``).
 
-    >>> client = Payrudder(api_key="qk_test_...")
+    >>> client = Payrudder(api_key="prk_test_...")
     >>> client.customers.get_customer("cus_42")
 
     Args:
-        api_key: ``qk_test_...`` / ``qk_live_...``; falls back to ``PAYRUDDER_API_KEY``.
+        api_key: ``prk_test_...`` / ``prk_live_...``; falls back to ``PAYRUDDER_API_KEY``.
         base_url: falls back to ``PAYRUDDER_BASE_URL``, then ``http://localhost:42800``.
         timeout: seconds per request (default 30).
         max_retries: automatic retries for network errors, 429, 502/503/504 and (idempotent calls) 500. Default 2.

@@ -23,7 +23,7 @@ abstract class TestCase extends BaseTestCase
     protected function client(int $maxRetries = 2): Client
     {
         return new Client(
-            apiKey: 'qk_test_abcdefgh_secret',
+            apiKey: 'prk_test_abcdefgh_secret',
             baseUrl: 'https://api.example.test/',
             maxRetries: $maxRetries,
             transport: $this->transport,

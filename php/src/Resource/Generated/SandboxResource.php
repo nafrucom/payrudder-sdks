@@ -24,7 +24,7 @@ use Payrudder\RequestOptions;
 final class SandboxResource extends AbstractResource
 {
     /**
-     * Sandbox only — close a period now and run the real billing flow (POST /v1/sandbox/close-period).
+     * Sandbox only - close a period now and run the real billing flow (POST /v1/sandbox/close-period).
      *
      * @param SandboxClosePeriodRequest|array<string,mixed>|null $body
      * @param RequestOptions|null $options
@@ -37,7 +37,7 @@ final class SandboxResource extends AbstractResource
     }
 
     /**
-     * Sandbox only — choose the mock payment outcome for a customer (POST /v1/sandbox/customers/{external_id}/payment-scenario).
+     * Sandbox only - choose the mock payment outcome for a customer (POST /v1/sandbox/customers/{external_id}/payment-scenario).
      *
      * @param string $externalId
      * @param SetPaymentScenarioRequest|array<string,mixed> $body
