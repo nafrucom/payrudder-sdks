@@ -65,17 +65,24 @@ use Payrudder\RequestOptions;
 final class CustomersResource extends AbstractResource
 {
     /**
-     * List customers (ordered by external_id) (GET /v1/customers).
+     * List customers (ordered by external_id, or searched, narrowed and sorted) (GET /v1/customers).
      *
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $country
+     * @param string|null $currency
+     * @param string|null $subscription
+     * @param string|null $createdFrom
+     * @param string|null $createdTo
      * @param RequestOptions|null $options
      *
      * @throws PayrudderException
      */
-    public function listCustomers(?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): ListCustomersResponse
+    public function listCustomers(?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $country = null, ?string $currency = null, ?string $subscription = null, ?string $createdFrom = null, ?string $createdTo = null, ?RequestOptions $options = null): ListCustomersResponse
     {
-        return ListCustomersResponse::fromArray($this->call('GET', '/v1/customers', ['page_size' => $pageSize, 'page_token' => $pageToken], null, $options));
+        return ListCustomersResponse::fromArray($this->call('GET', '/v1/customers', ['page_size' => $pageSize, 'page_token' => $pageToken, 'search' => $search, 'sort' => $sort, 'country' => $country, 'currency' => $currency, 'subscription' => $subscription, 'created_from' => $createdFrom, 'created_to' => $createdTo], null, $options));
     }
 
     /**
@@ -83,14 +90,21 @@ final class CustomersResource extends AbstractResource
      *
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $country
+     * @param string|null $currency
+     * @param string|null $subscription
+     * @param string|null $createdFrom
+     * @param string|null $createdTo
      * @param RequestOptions|null $options
      *
      * @return Generator<int, ListCustomersResponse>
      */
-    public function listCustomersPages(?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): Generator
+    public function listCustomersPages(?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $country = null, ?string $currency = null, ?string $subscription = null, ?string $createdFrom = null, ?string $createdTo = null, ?RequestOptions $options = null): Generator
     {
         do {
-            $page = $this->listCustomers(pageSize: $pageSize, pageToken: $pageToken, options: $options);
+            $page = $this->listCustomers(pageSize: $pageSize, pageToken: $pageToken, search: $search, sort: $sort, country: $country, currency: $currency, subscription: $subscription, createdFrom: $createdFrom, createdTo: $createdTo, options: $options);
             yield $page;
             $pageToken = $page->nextPageToken;
         } while ($pageToken !== null && $pageToken !== '');
@@ -101,13 +115,20 @@ final class CustomersResource extends AbstractResource
      *
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $country
+     * @param string|null $currency
+     * @param string|null $subscription
+     * @param string|null $createdFrom
+     * @param string|null $createdTo
      * @param RequestOptions|null $options
      *
      * @return Generator<int, Customer>
      */
-    public function listCustomersIterator(?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): Generator
+    public function listCustomersIterator(?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $country = null, ?string $currency = null, ?string $subscription = null, ?string $createdFrom = null, ?string $createdTo = null, ?RequestOptions $options = null): Generator
     {
-        foreach ($this->listCustomersPages(pageSize: $pageSize, pageToken: $pageToken, options: $options) as $page) {
+        foreach ($this->listCustomersPages(pageSize: $pageSize, pageToken: $pageToken, search: $search, sort: $sort, country: $country, currency: $currency, subscription: $subscription, createdFrom: $createdFrom, createdTo: $createdTo, options: $options) as $page) {
             foreach ($page->customers ?? [] as $item) {
                 yield $item;
             }

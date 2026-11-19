@@ -1193,7 +1193,12 @@ func (s *CreditsService) SetCreditSettings(ctx context.Context, req *CreditSetti
 // CustomersService is the customers namespace of the API.
 type CustomersService service
 
-// ListCustomers: List customers (ordered by external_id) (GET /v1/customers).
+// ListCustomers: List customers (ordered by external_id, or searched, narrowed and sorted) (GET /v1/customers).
+//
+// With only `page_size` and `page_token` the list is in external id order and pages by a keyset token, which
+// stays stable while customers are added. With any of the other parameters the list is searched, narrowed and
+// sorted on the server: it is ordered by `sort` (newest first when unset), pages by position and reports
+// `total`.
 func (s *CustomersService) ListCustomers(ctx context.Context, params *ListCustomersParams, opts ...RequestOption) (*ListCustomersResponse, error) {
 	var out ListCustomersResponse
 	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/customers", query: params.values(), body: nil}, &out, opts); err != nil {
@@ -2230,7 +2235,11 @@ func (s *ExpensesService) UpdateExpense(ctx context.Context, id string, req *Exp
 // InvoicesService is the invoices namespace of the API.
 type InvoicesService service
 
-// ListInvoices: List invoices (ordered by id) (GET /v1/invoices).
+// ListInvoices: List invoices (ordered by id, or searched, narrowed and sorted) (GET /v1/invoices).
+//
+// With `search`, `sort`, `kind`, `created_from`, `created_to` or more than one `status` the list is searched,
+// narrowed and sorted on the server: it is ordered by `sort` (newest first when unset), pages by position and
+// reports `total`. Without them it is in id order and pages by a keyset token.
 func (s *InvoicesService) ListInvoices(ctx context.Context, params *ListInvoicesParams, opts ...RequestOption) (*ListInvoicesResponse, error) {
 	var out ListInvoicesResponse
 	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/invoices", query: params.values(), body: nil}, &out, opts); err != nil {
@@ -3043,7 +3052,10 @@ func (s *SandboxService) SandboxScenarios(ctx context.Context, opts ...RequestOp
 // SubscriptionsService is the subscriptions namespace of the API.
 type SubscriptionsService service
 
-// ListSubscriptions: Subscriptions, newest first (GET /v1/subscriptions).
+// ListSubscriptions: Subscriptions, newest first (or searched, narrowed and sorted) (GET /v1/subscriptions).
+//
+// With `search`, `sort`, `state`, `currency`, `interval`, `started_from` or `started_to` the list is searched,
+// narrowed and sorted on the server: it pages by position and reports `total`.
 func (s *SubscriptionsService) ListSubscriptions(ctx context.Context, params *ListSubscriptionsParams, opts ...RequestOption) (*ListSubscriptionsResponse, error) {
 	var out ListSubscriptionsResponse
 	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/subscriptions", query: params.values(), body: nil}, &out, opts); err != nil {

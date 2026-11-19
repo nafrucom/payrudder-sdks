@@ -88,18 +88,18 @@ class CustomersResource:
     def __init__(self, client: Payrudder) -> None:
         self._client = client
 
-    def list_customers(self, *, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.ListCustomersResponse:
-        """List customers (ordered by external_id).
+    def list_customers(self, *, page_size: int | None = None, page_token: str | None = None, search: str | None = None, sort: Literal["newest", "oldest", "name", "-name"] | None = None, country: str | None = None, currency: str | None = None, subscription: Literal["active", "none"] | None = None, created_from: str | datetime | None = None, created_to: str | datetime | None = None, options: RequestOptions | None = None) -> m.ListCustomersResponse:
+        """List customers (ordered by external_id, or searched, narrowed and sorted).
 
         ``GET /v1/customers``
         """
-        return cast("m.ListCustomersResponse", self._client._request("GET", "/v1/customers", query={"page_size": page_size, "page_token": page_token}, options=options))
+        return cast("m.ListCustomersResponse", self._client._request("GET", "/v1/customers", query={"page_size": page_size, "page_token": page_token, "search": search, "sort": sort, "country": country, "currency": currency, "subscription": subscription, "created_from": created_from, "created_to": created_to}, options=options))
 
-    def iter_customers(self, *, page_size: int | None = None, options: RequestOptions | None = None) -> Iterator[m.Customer]:
+    def iter_customers(self, *, page_size: int | None = None, search: str | None = None, sort: Literal["newest", "oldest", "name", "-name"] | None = None, country: str | None = None, currency: str | None = None, subscription: Literal["active", "none"] | None = None, created_from: str | datetime | None = None, created_to: str | datetime | None = None, options: RequestOptions | None = None) -> Iterator[m.Customer]:
         """Every item of ``list_customers``, following ``next_page_token`` until the last page."""
         token: str | None = None
         while True:
-            page = self.list_customers(page_size=page_size, options=options, page_token=token)
+            page = self.list_customers(page_size=page_size, search=search, sort=sort, country=country, currency=currency, subscription=subscription, created_from=created_from, created_to=created_to, options=options, page_token=token)
             yield from page.get("customers", [])
             token = page.get("next_page_token") or None
             if token is None:
@@ -639,18 +639,18 @@ class SubscriptionsResource:
     def __init__(self, client: Payrudder) -> None:
         self._client = client
 
-    def list_subscriptions(self, *, customer: str | None = None, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.ListSubscriptionsResponse:
-        """Subscriptions, newest first.
+    def list_subscriptions(self, *, customer: str | None = None, page_size: int | None = None, page_token: str | None = None, search: str | None = None, sort: Literal["newest", "oldest"] | None = None, state: str | None = None, currency: str | None = None, interval: str | None = None, started_from: str | datetime | None = None, started_to: str | datetime | None = None, options: RequestOptions | None = None) -> m.ListSubscriptionsResponse:
+        """Subscriptions, newest first (or searched, narrowed and sorted).
 
         ``GET /v1/subscriptions``
         """
-        return cast("m.ListSubscriptionsResponse", self._client._request("GET", "/v1/subscriptions", query={"customer": customer, "page_size": page_size, "page_token": page_token}, options=options))
+        return cast("m.ListSubscriptionsResponse", self._client._request("GET", "/v1/subscriptions", query={"customer": customer, "page_size": page_size, "page_token": page_token, "search": search, "sort": sort, "state": state, "currency": currency, "interval": interval, "started_from": started_from, "started_to": started_to}, options=options))
 
-    def iter_subscriptions(self, *, customer: str | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> Iterator[m.Subscription]:
+    def iter_subscriptions(self, *, customer: str | None = None, page_size: int | None = None, search: str | None = None, sort: Literal["newest", "oldest"] | None = None, state: str | None = None, currency: str | None = None, interval: str | None = None, started_from: str | datetime | None = None, started_to: str | datetime | None = None, options: RequestOptions | None = None) -> Iterator[m.Subscription]:
         """Every item of ``list_subscriptions``, following ``next_page_token`` until the last page."""
         token: str | None = None
         while True:
-            page = self.list_subscriptions(customer=customer, page_size=page_size, options=options, page_token=token)
+            page = self.list_subscriptions(customer=customer, page_size=page_size, search=search, sort=sort, state=state, currency=currency, interval=interval, started_from=started_from, started_to=started_to, options=options, page_token=token)
             yield from page.get("subscriptions", [])
             token = page.get("next_page_token") or None
             if token is None:
@@ -1560,18 +1560,18 @@ class InvoicesResource:
     def __init__(self, client: Payrudder) -> None:
         self._client = client
 
-    def list_invoices(self, *, customer: str | None = None, period: str | None = None, status: Literal["draft", "open", "paid", "uncollectible", "void"] | None = None, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.ListInvoicesResponse:
-        """List invoices (ordered by id).
+    def list_invoices(self, *, customer: str | None = None, period: str | None = None, status: str | None = None, page_size: int | None = None, page_token: str | None = None, search: str | None = None, sort: Literal["newest", "oldest", "amount", "-amount"] | None = None, kind: str | None = None, created_from: str | datetime | None = None, created_to: str | datetime | None = None, options: RequestOptions | None = None) -> m.ListInvoicesResponse:
+        """List invoices (ordered by id, or searched, narrowed and sorted).
 
         ``GET /v1/invoices``
         """
-        return cast("m.ListInvoicesResponse", self._client._request("GET", "/v1/invoices", query={"customer": customer, "period": period, "status": status, "page_size": page_size, "page_token": page_token}, response_wire='ListInvoicesResponse', options=options))
+        return cast("m.ListInvoicesResponse", self._client._request("GET", "/v1/invoices", query={"customer": customer, "period": period, "status": status, "page_size": page_size, "page_token": page_token, "search": search, "sort": sort, "kind": kind, "created_from": created_from, "created_to": created_to}, response_wire='ListInvoicesResponse', options=options))
 
-    def iter_invoices(self, *, customer: str | None = None, period: str | None = None, status: Literal["draft", "open", "paid", "uncollectible", "void"] | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> Iterator[m.Invoice]:
+    def iter_invoices(self, *, customer: str | None = None, period: str | None = None, status: str | None = None, page_size: int | None = None, search: str | None = None, sort: Literal["newest", "oldest", "amount", "-amount"] | None = None, kind: str | None = None, created_from: str | datetime | None = None, created_to: str | datetime | None = None, options: RequestOptions | None = None) -> Iterator[m.Invoice]:
         """Every item of ``list_invoices``, following ``next_page_token`` until the last page."""
         token: str | None = None
         while True:
-            page = self.list_invoices(customer=customer, period=period, status=status, page_size=page_size, options=options, page_token=token)
+            page = self.list_invoices(customer=customer, period=period, status=status, page_size=page_size, search=search, sort=sort, kind=kind, created_from=created_from, created_to=created_to, options=options, page_token=token)
             yield from page.get("invoices", [])
             token = page.get("next_page_token") or None
             if token is None:
@@ -2131,18 +2131,18 @@ class AsyncCustomersResource:
     def __init__(self, client: AsyncPayrudder) -> None:
         self._client = client
 
-    async def list_customers(self, *, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.ListCustomersResponse:
-        """List customers (ordered by external_id).
+    async def list_customers(self, *, page_size: int | None = None, page_token: str | None = None, search: str | None = None, sort: Literal["newest", "oldest", "name", "-name"] | None = None, country: str | None = None, currency: str | None = None, subscription: Literal["active", "none"] | None = None, created_from: str | datetime | None = None, created_to: str | datetime | None = None, options: RequestOptions | None = None) -> m.ListCustomersResponse:
+        """List customers (ordered by external_id, or searched, narrowed and sorted).
 
         ``GET /v1/customers``
         """
-        return cast("m.ListCustomersResponse", await self._client._request("GET", "/v1/customers", query={"page_size": page_size, "page_token": page_token}, options=options))
+        return cast("m.ListCustomersResponse", await self._client._request("GET", "/v1/customers", query={"page_size": page_size, "page_token": page_token, "search": search, "sort": sort, "country": country, "currency": currency, "subscription": subscription, "created_from": created_from, "created_to": created_to}, options=options))
 
-    async def iter_customers(self, *, page_size: int | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.Customer]:
+    async def iter_customers(self, *, page_size: int | None = None, search: str | None = None, sort: Literal["newest", "oldest", "name", "-name"] | None = None, country: str | None = None, currency: str | None = None, subscription: Literal["active", "none"] | None = None, created_from: str | datetime | None = None, created_to: str | datetime | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.Customer]:
         """Every item of ``list_customers``, following ``next_page_token`` until the last page."""
         token: str | None = None
         while True:
-            page = await self.list_customers(page_size=page_size, options=options, page_token=token)
+            page = await self.list_customers(page_size=page_size, search=search, sort=sort, country=country, currency=currency, subscription=subscription, created_from=created_from, created_to=created_to, options=options, page_token=token)
             for item in page.get("customers", []):
                 yield item
             token = page.get("next_page_token") or None
@@ -2686,18 +2686,18 @@ class AsyncSubscriptionsResource:
     def __init__(self, client: AsyncPayrudder) -> None:
         self._client = client
 
-    async def list_subscriptions(self, *, customer: str | None = None, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.ListSubscriptionsResponse:
-        """Subscriptions, newest first.
+    async def list_subscriptions(self, *, customer: str | None = None, page_size: int | None = None, page_token: str | None = None, search: str | None = None, sort: Literal["newest", "oldest"] | None = None, state: str | None = None, currency: str | None = None, interval: str | None = None, started_from: str | datetime | None = None, started_to: str | datetime | None = None, options: RequestOptions | None = None) -> m.ListSubscriptionsResponse:
+        """Subscriptions, newest first (or searched, narrowed and sorted).
 
         ``GET /v1/subscriptions``
         """
-        return cast("m.ListSubscriptionsResponse", await self._client._request("GET", "/v1/subscriptions", query={"customer": customer, "page_size": page_size, "page_token": page_token}, options=options))
+        return cast("m.ListSubscriptionsResponse", await self._client._request("GET", "/v1/subscriptions", query={"customer": customer, "page_size": page_size, "page_token": page_token, "search": search, "sort": sort, "state": state, "currency": currency, "interval": interval, "started_from": started_from, "started_to": started_to}, options=options))
 
-    async def iter_subscriptions(self, *, customer: str | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.Subscription]:
+    async def iter_subscriptions(self, *, customer: str | None = None, page_size: int | None = None, search: str | None = None, sort: Literal["newest", "oldest"] | None = None, state: str | None = None, currency: str | None = None, interval: str | None = None, started_from: str | datetime | None = None, started_to: str | datetime | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.Subscription]:
         """Every item of ``list_subscriptions``, following ``next_page_token`` until the last page."""
         token: str | None = None
         while True:
-            page = await self.list_subscriptions(customer=customer, page_size=page_size, options=options, page_token=token)
+            page = await self.list_subscriptions(customer=customer, page_size=page_size, search=search, sort=sort, state=state, currency=currency, interval=interval, started_from=started_from, started_to=started_to, options=options, page_token=token)
             for item in page.get("subscriptions", []):
                 yield item
             token = page.get("next_page_token") or None
@@ -3620,18 +3620,18 @@ class AsyncInvoicesResource:
     def __init__(self, client: AsyncPayrudder) -> None:
         self._client = client
 
-    async def list_invoices(self, *, customer: str | None = None, period: str | None = None, status: Literal["draft", "open", "paid", "uncollectible", "void"] | None = None, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.ListInvoicesResponse:
-        """List invoices (ordered by id).
+    async def list_invoices(self, *, customer: str | None = None, period: str | None = None, status: str | None = None, page_size: int | None = None, page_token: str | None = None, search: str | None = None, sort: Literal["newest", "oldest", "amount", "-amount"] | None = None, kind: str | None = None, created_from: str | datetime | None = None, created_to: str | datetime | None = None, options: RequestOptions | None = None) -> m.ListInvoicesResponse:
+        """List invoices (ordered by id, or searched, narrowed and sorted).
 
         ``GET /v1/invoices``
         """
-        return cast("m.ListInvoicesResponse", await self._client._request("GET", "/v1/invoices", query={"customer": customer, "period": period, "status": status, "page_size": page_size, "page_token": page_token}, response_wire='ListInvoicesResponse', options=options))
+        return cast("m.ListInvoicesResponse", await self._client._request("GET", "/v1/invoices", query={"customer": customer, "period": period, "status": status, "page_size": page_size, "page_token": page_token, "search": search, "sort": sort, "kind": kind, "created_from": created_from, "created_to": created_to}, response_wire='ListInvoicesResponse', options=options))
 
-    async def iter_invoices(self, *, customer: str | None = None, period: str | None = None, status: Literal["draft", "open", "paid", "uncollectible", "void"] | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.Invoice]:
+    async def iter_invoices(self, *, customer: str | None = None, period: str | None = None, status: str | None = None, page_size: int | None = None, search: str | None = None, sort: Literal["newest", "oldest", "amount", "-amount"] | None = None, kind: str | None = None, created_from: str | datetime | None = None, created_to: str | datetime | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.Invoice]:
         """Every item of ``list_invoices``, following ``next_page_token`` until the last page."""
         token: str | None = None
         while True:
-            page = await self.list_invoices(customer=customer, period=period, status=status, page_size=page_size, options=options, page_token=token)
+            page = await self.list_invoices(customer=customer, period=period, status=status, page_size=page_size, search=search, sort=sort, kind=kind, created_from=created_from, created_to=created_to, options=options, page_token=token)
             for item in page.get("invoices", []):
                 yield item
             token = page.get("next_page_token") or None

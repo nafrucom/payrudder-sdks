@@ -37,7 +37,7 @@ final class PriceChangeMailPreviewRequest implements RequestBody
         return Cast::compact([
             'plan_code' => $this->planCode,
             'effective_time' => $this->effectiveTime,
-            'new_renewal_minor' => $this->newRenewalMinor,
+            'new_renewal_minor' => Cast::int64($this->newRenewalMinor),
             'locale' => $this->locale,
             'customer_name' => $this->customerName,
         ]);

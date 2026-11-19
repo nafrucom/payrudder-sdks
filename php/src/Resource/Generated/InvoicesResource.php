@@ -28,20 +28,25 @@ use Payrudder\RequestOptions;
 final class InvoicesResource extends AbstractResource
 {
     /**
-     * List invoices (ordered by id) (GET /v1/invoices).
+     * List invoices (ordered by id, or searched, narrowed and sorted) (GET /v1/invoices).
      *
      * @param string|null $customer
      * @param string|null $period
      * @param string|null $status
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $kind
+     * @param string|null $createdFrom
+     * @param string|null $createdTo
      * @param RequestOptions|null $options
      *
      * @throws PayrudderException
      */
-    public function listInvoices(?string $customer = null, ?string $period = null, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): ListInvoicesResponse
+    public function listInvoices(?string $customer = null, ?string $period = null, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $kind = null, ?string $createdFrom = null, ?string $createdTo = null, ?RequestOptions $options = null): ListInvoicesResponse
     {
-        return ListInvoicesResponse::fromArray($this->call('GET', '/v1/invoices', ['customer' => $customer, 'period' => $period, 'status' => $status, 'page_size' => $pageSize, 'page_token' => $pageToken], null, $options));
+        return ListInvoicesResponse::fromArray($this->call('GET', '/v1/invoices', ['customer' => $customer, 'period' => $period, 'status' => $status, 'page_size' => $pageSize, 'page_token' => $pageToken, 'search' => $search, 'sort' => $sort, 'kind' => $kind, 'created_from' => $createdFrom, 'created_to' => $createdTo], null, $options));
     }
 
     /**
@@ -52,14 +57,19 @@ final class InvoicesResource extends AbstractResource
      * @param string|null $status
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $kind
+     * @param string|null $createdFrom
+     * @param string|null $createdTo
      * @param RequestOptions|null $options
      *
      * @return Generator<int, ListInvoicesResponse>
      */
-    public function listInvoicesPages(?string $customer = null, ?string $period = null, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): Generator
+    public function listInvoicesPages(?string $customer = null, ?string $period = null, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $kind = null, ?string $createdFrom = null, ?string $createdTo = null, ?RequestOptions $options = null): Generator
     {
         do {
-            $page = $this->listInvoices(customer: $customer, period: $period, status: $status, pageSize: $pageSize, pageToken: $pageToken, options: $options);
+            $page = $this->listInvoices(customer: $customer, period: $period, status: $status, pageSize: $pageSize, pageToken: $pageToken, search: $search, sort: $sort, kind: $kind, createdFrom: $createdFrom, createdTo: $createdTo, options: $options);
             yield $page;
             $pageToken = $page->nextPageToken;
         } while ($pageToken !== null && $pageToken !== '');
@@ -73,13 +83,18 @@ final class InvoicesResource extends AbstractResource
      * @param string|null $status
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $kind
+     * @param string|null $createdFrom
+     * @param string|null $createdTo
      * @param RequestOptions|null $options
      *
      * @return Generator<int, Invoice>
      */
-    public function listInvoicesIterator(?string $customer = null, ?string $period = null, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): Generator
+    public function listInvoicesIterator(?string $customer = null, ?string $period = null, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $kind = null, ?string $createdFrom = null, ?string $createdTo = null, ?RequestOptions $options = null): Generator
     {
-        foreach ($this->listInvoicesPages(customer: $customer, period: $period, status: $status, pageSize: $pageSize, pageToken: $pageToken, options: $options) as $page) {
+        foreach ($this->listInvoicesPages(customer: $customer, period: $period, status: $status, pageSize: $pageSize, pageToken: $pageToken, search: $search, sort: $sort, kind: $kind, createdFrom: $createdFrom, createdTo: $createdTo, options: $options) as $page) {
             foreach ($page->invoices ?? [] as $item) {
                 yield $item;
             }

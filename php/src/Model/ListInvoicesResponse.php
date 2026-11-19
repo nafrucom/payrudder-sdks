@@ -15,10 +15,12 @@ use Payrudder\Internal\Cast;
 final class ListInvoicesResponse implements Model
 {
     /**
+     * @param int|null $total
      * @param list<Invoice>|null $invoices
      * @param string|null $nextPageToken
      */
     public function __construct(
+        public readonly ?int $total = null,
         public readonly ?array $invoices = null,
         public readonly ?string $nextPageToken = null,
     ) {}
@@ -29,6 +31,7 @@ final class ListInvoicesResponse implements Model
     public static function fromArray(array $data): static
     {
         return new static(
+            total: Cast::int($data['total'] ?? null),
             invoices: Cast::models(Invoice::class, $data['invoices'] ?? null),
             nextPageToken: Cast::string($data['next_page_token'] ?? null),
         );
@@ -40,6 +43,7 @@ final class ListInvoicesResponse implements Model
     public function toArray(): array
     {
         return Cast::compact([
+            'total' => $this->total,
             'invoices' => Cast::wire($this->invoices),
             'next_page_token' => $this->nextPageToken,
         ]);

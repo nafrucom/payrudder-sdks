@@ -2120,6 +2120,8 @@ type ListCustomerPaymentsResponse struct {
 
 // ListCustomersResponse is the response of ListCustomers.
 type ListCustomersResponse struct {
+	// How many rows match, on a searched, narrowed or sorted list; 0 on the plain list
+	Total         int        `json:"total,omitempty"`
 	Customers     []Customer `json:"customers"`
 	NextPageToken string     `json:"next_page_token"`
 }
@@ -2151,6 +2153,8 @@ type ListExpenseRulesResponse struct {
 
 // ListInvoicesResponse is the response of ListInvoices.
 type ListInvoicesResponse struct {
+	// How many rows match, on a searched, narrowed or sorted list; 0 on the plain list
+	Total         int       `json:"total,omitempty"`
 	Invoices      []Invoice `json:"invoices"`
 	NextPageToken string    `json:"next_page_token"`
 }
@@ -2216,6 +2220,8 @@ type ListRejectedEventsResponse struct {
 
 // ListSubscriptionsResponse is the response of ListSubscriptions.
 type ListSubscriptionsResponse struct {
+	// How many rows match, on a searched, narrowed or sorted list; 0 on the plain list
+	Total         int            `json:"total,omitempty"`
 	Subscriptions []Subscription `json:"subscriptions"`
 	NextPageToken string         `json:"next_page_token"`
 }
@@ -2529,7 +2535,8 @@ type PriceChangeMailPreviewRequest struct {
 	PlanCode     string `json:"plan_code"`
 	// When the new price starts.
 	EffectiveTime time.Time `json:"effective_time"`
-	// The new renewal fee in the tenant's currency, in minor units.
+	// The new renewal fee in the tenant's currency, in minor units (a string like every amount; a plain number is
+	// read too).
 	NewRenewalMinor Int64 `json:"new_renewal_minor"`
 }
 
@@ -3945,6 +3952,20 @@ func (p *ListCreditPacksParams) values() url.Values {
 type ListCustomersParams struct {
 	PageSize  *int
 	PageToken string
+	// Words that must each appear in the external id, name, e-mail or tax id
+	Search string
+	// One of: newest, oldest, name, -name.
+	Sort string
+	// ISO 3166-1 alpha-2 codes, comma-separated: any of them
+	Country string
+	// ISO 4217 codes, comma-separated: any of them
+	Currency string
+	// Customers with a subscription that is not cancelled, or without one. One of: active, none.
+	Subscription string
+	// Created at or after this time (a plain date is the start of that day, UTC)
+	CreatedFrom *time.Time
+	// Created before this time
+	CreatedTo *time.Time
 }
 
 func (p *ListCustomersParams) values() url.Values {
@@ -3957,6 +3978,27 @@ func (p *ListCustomersParams) values() url.Values {
 	}
 	if p.PageToken != "" {
 		v.Set("page_token", p.PageToken)
+	}
+	if p.Search != "" {
+		v.Set("search", p.Search)
+	}
+	if p.Sort != "" {
+		v.Set("sort", p.Sort)
+	}
+	if p.Country != "" {
+		v.Set("country", p.Country)
+	}
+	if p.Currency != "" {
+		v.Set("currency", p.Currency)
+	}
+	if p.Subscription != "" {
+		v.Set("subscription", p.Subscription)
+	}
+	if p.CreatedFrom != nil {
+		v.Set("created_from", p.CreatedFrom.UTC().Format(time.RFC3339Nano))
+	}
+	if p.CreatedTo != nil {
+		v.Set("created_to", p.CreatedTo.UTC().Format(time.RFC3339Nano))
 	}
 	return v
 }
@@ -4305,10 +4347,20 @@ type ListInvoicesParams struct {
 	// Customer external id
 	Customer string
 	Period   string
-	// One of: draft, open, paid, uncollectible, void.
+	// draft, open, paid, uncollectible or void; several comma-separated: any of them
 	Status    string
 	PageSize  *int
 	PageToken string
+	// Words that must each appear in the invoice number, the customer's external id or name, or the period
+	Search string
+	// One of: newest, oldest, amount, -amount.
+	Sort string
+	// REGULAR, CORRECTION, FEE or LINK, comma-separated: any of them
+	Kind string
+	// Created at or after this time (a plain date is the start of that day, UTC)
+	CreatedFrom *time.Time
+	// Created before this time
+	CreatedTo *time.Time
 }
 
 func (p *ListInvoicesParams) values() url.Values {
@@ -4330,6 +4382,21 @@ func (p *ListInvoicesParams) values() url.Values {
 	}
 	if p.PageToken != "" {
 		v.Set("page_token", p.PageToken)
+	}
+	if p.Search != "" {
+		v.Set("search", p.Search)
+	}
+	if p.Sort != "" {
+		v.Set("sort", p.Sort)
+	}
+	if p.Kind != "" {
+		v.Set("kind", p.Kind)
+	}
+	if p.CreatedFrom != nil {
+		v.Set("created_from", p.CreatedFrom.UTC().Format(time.RFC3339Nano))
+	}
+	if p.CreatedTo != nil {
+		v.Set("created_to", p.CreatedTo.UTC().Format(time.RFC3339Nano))
 	}
 	return v
 }
@@ -4609,6 +4676,18 @@ type ListSubscriptionsParams struct {
 	Customer  string
 	PageSize  *int
 	PageToken string
+	// Words that must each appear in the customer's external id or name, the plan's code or name, or the provider
+	Search string
+	// By start time. One of: newest, oldest.
+	Sort string
+	// trialing, active, past_due, paused or cancelled, comma-separated: any of them
+	State string
+	// ISO 4217 codes, comma-separated: any of them
+	Currency string
+	// month or year, comma-separated
+	Interval    string
+	StartedFrom *time.Time
+	StartedTo   *time.Time
 }
 
 func (p *ListSubscriptionsParams) values() url.Values {
@@ -4624,6 +4703,27 @@ func (p *ListSubscriptionsParams) values() url.Values {
 	}
 	if p.PageToken != "" {
 		v.Set("page_token", p.PageToken)
+	}
+	if p.Search != "" {
+		v.Set("search", p.Search)
+	}
+	if p.Sort != "" {
+		v.Set("sort", p.Sort)
+	}
+	if p.State != "" {
+		v.Set("state", p.State)
+	}
+	if p.Currency != "" {
+		v.Set("currency", p.Currency)
+	}
+	if p.Interval != "" {
+		v.Set("interval", p.Interval)
+	}
+	if p.StartedFrom != nil {
+		v.Set("started_from", p.StartedFrom.UTC().Format(time.RFC3339Nano))
+	}
+	if p.StartedTo != nil {
+		v.Set("started_to", p.StartedTo.UTC().Format(time.RFC3339Nano))
 	}
 	return v
 }

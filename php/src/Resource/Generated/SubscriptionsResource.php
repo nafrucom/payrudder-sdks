@@ -28,18 +28,25 @@ use Payrudder\RequestOptions;
 final class SubscriptionsResource extends AbstractResource
 {
     /**
-     * Subscriptions, newest first (GET /v1/subscriptions).
+     * Subscriptions, newest first (or searched, narrowed and sorted) (GET /v1/subscriptions).
      *
      * @param string|null $customer
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $state
+     * @param string|null $currency
+     * @param string|null $interval
+     * @param string|null $startedFrom
+     * @param string|null $startedTo
      * @param RequestOptions|null $options
      *
      * @throws PayrudderException
      */
-    public function listSubscriptions(?string $customer = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): ListSubscriptionsResponse
+    public function listSubscriptions(?string $customer = null, ?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $state = null, ?string $currency = null, ?string $interval = null, ?string $startedFrom = null, ?string $startedTo = null, ?RequestOptions $options = null): ListSubscriptionsResponse
     {
-        return ListSubscriptionsResponse::fromArray($this->call('GET', '/v1/subscriptions', ['customer' => $customer, 'page_size' => $pageSize, 'page_token' => $pageToken], null, $options));
+        return ListSubscriptionsResponse::fromArray($this->call('GET', '/v1/subscriptions', ['customer' => $customer, 'page_size' => $pageSize, 'page_token' => $pageToken, 'search' => $search, 'sort' => $sort, 'state' => $state, 'currency' => $currency, 'interval' => $interval, 'started_from' => $startedFrom, 'started_to' => $startedTo], null, $options));
     }
 
     /**
@@ -48,14 +55,21 @@ final class SubscriptionsResource extends AbstractResource
      * @param string|null $customer
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $state
+     * @param string|null $currency
+     * @param string|null $interval
+     * @param string|null $startedFrom
+     * @param string|null $startedTo
      * @param RequestOptions|null $options
      *
      * @return Generator<int, ListSubscriptionsResponse>
      */
-    public function listSubscriptionsPages(?string $customer = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): Generator
+    public function listSubscriptionsPages(?string $customer = null, ?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $state = null, ?string $currency = null, ?string $interval = null, ?string $startedFrom = null, ?string $startedTo = null, ?RequestOptions $options = null): Generator
     {
         do {
-            $page = $this->listSubscriptions(customer: $customer, pageSize: $pageSize, pageToken: $pageToken, options: $options);
+            $page = $this->listSubscriptions(customer: $customer, pageSize: $pageSize, pageToken: $pageToken, search: $search, sort: $sort, state: $state, currency: $currency, interval: $interval, startedFrom: $startedFrom, startedTo: $startedTo, options: $options);
             yield $page;
             $pageToken = $page->nextPageToken;
         } while ($pageToken !== null && $pageToken !== '');
@@ -67,13 +81,20 @@ final class SubscriptionsResource extends AbstractResource
      * @param string|null $customer
      * @param int|null $pageSize
      * @param string|null $pageToken
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $state
+     * @param string|null $currency
+     * @param string|null $interval
+     * @param string|null $startedFrom
+     * @param string|null $startedTo
      * @param RequestOptions|null $options
      *
      * @return Generator<int, Subscription>
      */
-    public function listSubscriptionsIterator(?string $customer = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): Generator
+    public function listSubscriptionsIterator(?string $customer = null, ?int $pageSize = null, ?string $pageToken = null, ?string $search = null, ?string $sort = null, ?string $state = null, ?string $currency = null, ?string $interval = null, ?string $startedFrom = null, ?string $startedTo = null, ?RequestOptions $options = null): Generator
     {
-        foreach ($this->listSubscriptionsPages(customer: $customer, pageSize: $pageSize, pageToken: $pageToken, options: $options) as $page) {
+        foreach ($this->listSubscriptionsPages(customer: $customer, pageSize: $pageSize, pageToken: $pageToken, search: $search, sort: $sort, state: $state, currency: $currency, interval: $interval, startedFrom: $startedFrom, startedTo: $startedTo, options: $options) as $page) {
             foreach ($page->subscriptions ?? [] as $item) {
                 yield $item;
             }

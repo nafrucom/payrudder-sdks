@@ -126,9 +126,13 @@ class Customer(_CustomerRequired, total=False):
     tax_id_validated_at: str | None
 
 
-class ListCustomersResponse(TypedDict):
+class _ListCustomersResponseRequired(TypedDict):
     customers: list[Customer]
     next_page_token: str
+
+
+class ListCustomersResponse(_ListCustomersResponseRequired, total=False):
+    total: int
 
 
 class AddressInput(TypedDict, total=False):
@@ -870,9 +874,13 @@ class Subscription(TypedDict):
     changed_from_id: str
 
 
-class ListSubscriptionsResponse(TypedDict):
+class _ListSubscriptionsResponseRequired(TypedDict):
     subscriptions: list[Subscription]
     next_page_token: str
+
+
+class ListSubscriptionsResponse(_ListSubscriptionsResponseRequired, total=False):
+    total: int
 
 
 class _CreateSubscriptionRequestRequired(TypedDict):
@@ -1978,9 +1986,13 @@ class Invoice(TypedDict):
     credit_surplus_minor: int
 
 
-class ListInvoicesResponse(TypedDict):
+class _ListInvoicesResponseRequired(TypedDict):
     invoices: list[Invoice]
     next_page_token: str
+
+
+class ListInvoicesResponse(_ListInvoicesResponseRequired, total=False):
+    total: int
 
 
 class CreditNote(TypedDict):

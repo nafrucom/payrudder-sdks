@@ -990,7 +990,9 @@ export class CustomersResource {
   constructor(private readonly t: Transport) {}
 
   /**
-   * List customers (ordered by external_id)
+   * List customers (ordered by external_id, or searched, narrowed and sorted)
+   *
+   * With only `page_size` and `page_token` the list is in external id order and pages by a keyset token, which stays stable while customers are added. With any of the other parameters the list is searched, narrowed and sorted on the server: it is ordered by `sort` (newest first when unset), pages by position and reports `total`.
    *
    * `GET /v1/customers`
    */
@@ -1744,7 +1746,9 @@ export class InvoicesResource {
   constructor(private readonly t: Transport) {}
 
   /**
-   * List invoices (ordered by id)
+   * List invoices (ordered by id, or searched, narrowed and sorted)
+   *
+   * With `search`, `sort`, `kind`, `created_from`, `created_to` or more than one `status` the list is searched, narrowed and sorted on the server: it is ordered by `sort` (newest first when unset), pages by position and reports `total`. Without them it is in id order and pages by a keyset token.
    *
    * `GET /v1/invoices`
    */
@@ -2309,7 +2313,9 @@ export class SubscriptionsResource {
   constructor(private readonly t: Transport) {}
 
   /**
-   * Subscriptions, newest first
+   * Subscriptions, newest first (or searched, narrowed and sorted)
+   *
+   * With `search`, `sort`, `state`, `currency`, `interval`, `started_from` or `started_to` the list is searched, narrowed and sorted on the server: it pages by position and reports `total`.
    *
    * `GET /v1/subscriptions`
    */

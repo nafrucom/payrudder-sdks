@@ -2226,9 +2226,24 @@ export interface ListCustomerPaymentsResponse {
 export interface ListCustomersQuery {
   page_size?: number;
   page_token?: string;
+  /** Words that must each appear in the external id, name, e-mail or tax id */
+  search?: string;
+  sort?: "newest" | "oldest" | "name" | "-name";
+  /** ISO 3166-1 alpha-2 codes, comma-separated: any of them */
+  country?: string;
+  /** ISO 4217 codes, comma-separated: any of them */
+  currency?: string;
+  /** Customers with a subscription that is not cancelled, or without one */
+  subscription?: "active" | "none";
+  /** Created at or after this time (a plain date is the start of that day, UTC) */
+  created_from?: string;
+  /** Created before this time */
+  created_to?: string;
 }
 
 export interface ListCustomersResponse {
+  /** How many rows match, on a searched, narrowed or sorted list; 0 on the plain list */
+  total?: number;
   customers: Array<Customer>;
   next_page_token: string;
 }
@@ -2294,12 +2309,24 @@ export interface ListInvoicesQuery {
   /** Customer external id */
   customer?: string;
   period?: string;
-  status?: "draft" | "open" | "paid" | "uncollectible" | "void";
+  /** draft, open, paid, uncollectible or void; several comma-separated: any of them */
+  status?: string;
   page_size?: number;
   page_token?: string;
+  /** Words that must each appear in the invoice number, the customer's external id or name, or the period */
+  search?: string;
+  sort?: "newest" | "oldest" | "amount" | "-amount";
+  /** REGULAR, CORRECTION, FEE or LINK, comma-separated: any of them */
+  kind?: string;
+  /** Created at or after this time (a plain date is the start of that day, UTC) */
+  created_from?: string;
+  /** Created before this time */
+  created_to?: string;
 }
 
 export interface ListInvoicesResponse {
+  /** How many rows match, on a searched, narrowed or sorted list; 0 on the plain list */
+  total?: number;
   invoices: Array<Invoice>;
   next_page_token: string;
 }
@@ -2406,9 +2433,23 @@ export interface ListSubscriptionsQuery {
   customer?: string;
   page_size?: number;
   page_token?: string;
+  /** Words that must each appear in the customer's external id or name, the plan's code or name, or the provider */
+  search?: string;
+  /** By start time */
+  sort?: "newest" | "oldest";
+  /** trialing, active, past_due, paused or cancelled, comma-separated: any of them */
+  state?: string;
+  /** ISO 4217 codes, comma-separated: any of them */
+  currency?: string;
+  /** month or year, comma-separated */
+  interval?: string;
+  started_from?: string;
+  started_to?: string;
 }
 
 export interface ListSubscriptionsResponse {
+  /** How many rows match, on a searched, narrowed or sorted list; 0 on the plain list */
+  total?: number;
   subscriptions: Array<Subscription>;
   next_page_token: string;
 }
@@ -2686,7 +2727,7 @@ export interface PriceChangeMailPreviewRequest {
   plan_code: string;
   /** When the new price starts. */
   effective_time: string;
-  /** The new renewal fee in the tenant's currency, in minor units. */
+  /** The new renewal fee in the tenant's currency, in minor units (a string like every amount; a plain number is read too). */
   new_renewal_minor: Int64;
 }
 
@@ -2697,7 +2738,7 @@ export interface PriceChangeMailPreviewRequestParams {
   plan_code: string;
   /** When the new price starts. */
   effective_time: string;
-  /** The new renewal fee in the tenant's currency, in minor units. */
+  /** The new renewal fee in the tenant's currency, in minor units (a string like every amount; a plain number is read too). */
   new_renewal_minor: Int64Input;
 }
 
