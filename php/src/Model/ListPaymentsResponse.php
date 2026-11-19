@@ -17,10 +17,14 @@ final class ListPaymentsResponse implements Model
     /**
      * @param list<Payment>|null $payments
      * @param bool|null $truncated
+     * @param int|null $total
+     * @param string|null $nextPageToken
      */
     public function __construct(
         public readonly ?array $payments = null,
         public readonly ?bool $truncated = null,
+        public readonly ?int $total = null,
+        public readonly ?string $nextPageToken = null,
     ) {}
 
     /**
@@ -31,6 +35,8 @@ final class ListPaymentsResponse implements Model
         return new static(
             payments: Cast::models(Payment::class, $data['payments'] ?? null),
             truncated: Cast::bool($data['truncated'] ?? null),
+            total: Cast::int($data['total'] ?? null),
+            nextPageToken: Cast::string($data['next_page_token'] ?? null),
         );
     }
 
@@ -42,6 +48,8 @@ final class ListPaymentsResponse implements Model
         return Cast::compact([
             'payments' => Cast::wire($this->payments),
             'truncated' => $this->truncated,
+            'total' => $this->total,
+            'next_page_token' => $this->nextPageToken,
         ]);
     }
 }

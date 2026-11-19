@@ -85,6 +85,8 @@ import type {
   ListMailSuppressionsResponse,
   ListPaymentLinksQuery,
   ListPaymentLinksResponse,
+  ListPaymentsQuery,
+  ListPaymentsResponse,
   ListPromotionCodesQuery,
   ListPromotionCodesResponse,
   ListRejectedEventsQuery,
@@ -271,6 +273,14 @@ export class Paginators {
     return paginate(
       (q) => this.r.auditEvents.listAuditEvents(q, options),
       (page) => page.events,
+      query,
+    );
+  }
+
+  listPayments(query?: ListPaymentsQuery, options?: RequestOptions): AsyncGenerator<NonNullable<ListPaymentsResponse["payments"]>[number], void, undefined> {
+    return paginate(
+      (q) => this.r.payments.listPayments(q, options),
+      (page) => page.payments,
       query,
     );
   }

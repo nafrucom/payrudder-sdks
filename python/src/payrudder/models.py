@@ -1965,7 +1965,7 @@ class InvoicePayment(TypedDict):
     recorded_at: str | None
 
 
-class Invoice(TypedDict):
+class _InvoiceRequired(TypedDict):
     id: str
     customer_id: str
     customer_external_id: str
@@ -1984,6 +1984,10 @@ class Invoice(TypedDict):
     plan_version_id: str
     pdf_object_key: str
     credit_surplus_minor: int
+
+
+class Invoice(_InvoiceRequired, total=False):
+    customer_name: str
 
 
 class _ListInvoicesResponseRequired(TypedDict):
@@ -2189,7 +2193,7 @@ class ListAuditEventsResponse(TypedDict):
     unavailable_sources: list[Literal["plans", "billing", "payments"]]
 
 
-class Payment(TypedDict):
+class _PaymentRequired(TypedDict):
     id: str
     invoice_id: str
     provider: str
@@ -2200,9 +2204,20 @@ class Payment(TypedDict):
     occurred_at: str
 
 
-class ListPaymentsResponse(TypedDict):
+class Payment(_PaymentRequired, total=False):
+    invoice_number: str
+    customer_external_id: str
+    customer_name: str
+
+
+class _ListPaymentsResponseRequired(TypedDict):
     payments: list[Payment]
     truncated: bool
+
+
+class ListPaymentsResponse(_ListPaymentsResponseRequired, total=False):
+    total: int
+    next_page_token: str
 
 
 class _DisputeRequired(TypedDict):

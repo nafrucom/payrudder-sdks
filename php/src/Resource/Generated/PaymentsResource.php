@@ -6,9 +6,11 @@ declare(strict_types=1);
 
 namespace Payrudder\Resource\Generated;
 
+use Generator;
 use Payrudder\Exception\PayrudderException;
 use Payrudder\Internal\AbstractResource;
 use Payrudder\Model\ListPaymentsResponse;
+use Payrudder\Model\Payment;
 use Payrudder\RequestOptions;
 
 /**
@@ -17,15 +19,89 @@ use Payrudder\RequestOptions;
 final class PaymentsResource extends AbstractResource
 {
     /**
-     * The tenant's payments (charges and refunds), newest first (GET /v1/payments).
+     * The tenant's payments (charges and refunds), newest first (or searched, narrowed and sorted) (GET /v1/payments).
      *
+     * @param int|null $pageSize
+     * @param string|null $pageToken
      * @param int|null $limit
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $status
+     * @param string|null $kind
+     * @param string|null $occurredFrom
+     * @param string|null $invoiceId
+     * @param string|null $occurredTo
      * @param RequestOptions|null $options
      *
      * @throws PayrudderException
      */
-    public function listPayments(?int $limit = null, ?RequestOptions $options = null): ListPaymentsResponse
+    public function listPayments(?int $pageSize = null, ?string $pageToken = null, ?int $limit = null, ?string $search = null, ?string $sort = null, ?string $status = null, ?string $kind = null, ?string $occurredFrom = null, ?string $invoiceId = null, ?string $occurredTo = null, ?RequestOptions $options = null): ListPaymentsResponse
     {
-        return ListPaymentsResponse::fromArray($this->call('GET', '/v1/payments', ['limit' => $limit], null, $options));
+        return ListPaymentsResponse::fromArray($this->call('GET', '/v1/payments', ['page_size' => $pageSize, 'page_token' => $pageToken, 'limit' => $limit, 'search' => $search, 'sort' => $sort, 'status' => $status, 'kind' => $kind, 'occurred_from' => $occurredFrom, 'invoice_id' => $invoiceId, 'occurred_to' => $occurredTo], null, $options));
+    }
+
+    /**
+     * Walks every page of listPayments, yielding one response per page. A page token passed in starts the walk there.
+     *
+     * @param int|null $pageSize
+     * @param string|null $pageToken
+     * @param int|null $limit
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $status
+     * @param string|null $kind
+     * @param string|null $occurredFrom
+     * @param string|null $invoiceId
+     * @param string|null $occurredTo
+     * @param RequestOptions|null $options
+     *
+     * @return Generator<int, ListPaymentsResponse>
+     */
+    public function listPaymentsPages(?int $pageSize = null, ?string $pageToken = null, ?int $limit = null, ?string $search = null, ?string $sort = null, ?string $status = null, ?string $kind = null, ?string $occurredFrom = null, ?string $invoiceId = null, ?string $occurredTo = null, ?RequestOptions $options = null): Generator
+    {
+        do {
+            $page = $this->listPayments(pageSize: $pageSize, pageToken: $pageToken, limit: $limit, search: $search, sort: $sort, status: $status, kind: $kind, occurredFrom: $occurredFrom, invoiceId: $invoiceId, occurredTo: $occurredTo, options: $options);
+            yield $page;
+            $pageToken = $page->nextPageToken;
+        } while ($pageToken !== null && $pageToken !== '');
+    }
+
+    /**
+     * Walks every page of listPayments and yields the items one by one.
+     *
+     * @param int|null $pageSize
+     * @param string|null $pageToken
+     * @param int|null $limit
+     * @param string|null $search
+     * @param string|null $sort
+     * @param string|null $status
+     * @param string|null $kind
+     * @param string|null $occurredFrom
+     * @param string|null $invoiceId
+     * @param string|null $occurredTo
+     * @param RequestOptions|null $options
+     *
+     * @return Generator<int, Payment>
+     */
+    public function listPaymentsIterator(?int $pageSize = null, ?string $pageToken = null, ?int $limit = null, ?string $search = null, ?string $sort = null, ?string $status = null, ?string $kind = null, ?string $occurredFrom = null, ?string $invoiceId = null, ?string $occurredTo = null, ?RequestOptions $options = null): Generator
+    {
+        foreach ($this->listPaymentsPages(pageSize: $pageSize, pageToken: $pageToken, limit: $limit, search: $search, sort: $sort, status: $status, kind: $kind, occurredFrom: $occurredFrom, invoiceId: $invoiceId, occurredTo: $occurredTo, options: $options) as $page) {
+            foreach ($page->payments ?? [] as $item) {
+                yield $item;
+            }
+        }
+    }
+
+    /**
+     * One payment, as the list shows it (GET /v1/payments/{id}).
+     *
+     * @param string $id
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function getPayment(string $id, ?RequestOptions $options = null): Payment
+    {
+        return Payment::fromArray($this->call('GET', '/v1/payments/' . rawurlencode($id), [], null, $options));
     }
 }

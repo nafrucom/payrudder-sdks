@@ -25,6 +25,9 @@ final class Payment implements Model
      * @param int|null $amountMinor
      * @param string|null $currency
      * @param string|null $occurredAt
+     * @param string|null $invoiceNumber
+     * @param string|null $customerExternalId
+     * @param string|null $customerName
      */
     public function __construct(
         public readonly ?string $id = null,
@@ -35,6 +38,9 @@ final class Payment implements Model
         public readonly ?int $amountMinor = null,
         public readonly ?string $currency = null,
         public readonly ?string $occurredAt = null,
+        public readonly ?string $invoiceNumber = null,
+        public readonly ?string $customerExternalId = null,
+        public readonly ?string $customerName = null,
     ) {}
 
     /**
@@ -51,6 +57,9 @@ final class Payment implements Model
             amountMinor: Cast::int($data['amount_minor'] ?? null),
             currency: Cast::string($data['currency'] ?? null),
             occurredAt: Cast::string($data['occurred_at'] ?? null),
+            invoiceNumber: Cast::string($data['invoice_number'] ?? null),
+            customerExternalId: Cast::string($data['customer_external_id'] ?? null),
+            customerName: Cast::string($data['customer_name'] ?? null),
         );
     }
 
@@ -68,6 +77,9 @@ final class Payment implements Model
             'amount_minor' => Cast::int64($this->amountMinor),
             'currency' => $this->currency,
             'occurred_at' => $this->occurredAt,
+            'invoice_number' => $this->invoiceNumber,
+            'customer_external_id' => $this->customerExternalId,
+            'customer_name' => $this->customerName,
         ]);
     }
 }

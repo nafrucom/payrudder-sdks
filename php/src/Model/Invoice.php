@@ -20,6 +20,7 @@ final class Invoice implements Model
      * @param string|null $id
      * @param string|null $customerId
      * @param string|null $customerExternalId
+     * @param string|null $customerName
      * @param string|null $periodId
      * @param InvoiceKind|string|null $kind
      * @param string|null $number
@@ -40,6 +41,7 @@ final class Invoice implements Model
         public readonly ?string $id = null,
         public readonly ?string $customerId = null,
         public readonly ?string $customerExternalId = null,
+        public readonly ?string $customerName = null,
         public readonly ?string $periodId = null,
         public readonly InvoiceKind|string|null $kind = null,
         public readonly ?string $number = null,
@@ -66,6 +68,7 @@ final class Invoice implements Model
             id: Cast::string($data['id'] ?? null),
             customerId: Cast::string($data['customer_id'] ?? null),
             customerExternalId: Cast::string($data['customer_external_id'] ?? null),
+            customerName: Cast::string($data['customer_name'] ?? null),
             periodId: Cast::string($data['period_id'] ?? null),
             kind: Cast::enum(InvoiceKind::class, $data['kind'] ?? null),
             number: Cast::string($data['number'] ?? null),
@@ -93,6 +96,7 @@ final class Invoice implements Model
             'id' => $this->id,
             'customer_id' => $this->customerId,
             'customer_external_id' => $this->customerExternalId,
+            'customer_name' => $this->customerName,
             'period_id' => $this->periodId,
             'kind' => Cast::wire($this->kind),
             'number' => $this->number,

@@ -184,6 +184,7 @@ OPERATIONS: dict[str, tuple[str, str, str]] = {
     "listAuditEvents": ("audit_events", "list_audit_events", "GET /v1/audit-events"),
     "exportAuditEvents": ("audit_events", "export_audit_events", "GET /v1/audit-events/export"),
     "listPayments": ("payments", "list_payments", "GET /v1/payments"),
+    "getPayment": ("payments", "get_payment", "GET /v1/payments/{id}"),
     "listDisputes": ("disputes", "list_disputes", "GET /v1/disputes"),
     "listDisputeHistory": ("disputes", "list_dispute_history", "GET /v1/disputes/{id}/history"),
     "addDisputeNote": ("disputes", "add_dispute_note", "POST /v1/disputes/{id}/notes"),

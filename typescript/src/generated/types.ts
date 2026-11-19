@@ -1944,6 +1944,8 @@ export interface Invoice {
   id: string;
   customer_id: string;
   customer_external_id: string;
+  /** The customer's name as frozen on the invoice when it was issued; absent when none was recorded. Filled on the list (GET /v1/invoices) and on a single invoice */
+  customer_name?: string;
   period_id: string;
   /** FEE: a fixed fee invoiced in advance for one period, or what a plan change moved. LINK: made from an ad-hoc payment link */
   kind: "REGULAR" | "CORRECTION" | "FEE" | "LINK";
@@ -2375,13 +2377,34 @@ export interface ListPaymentLinksResponse {
 }
 
 export interface ListPaymentsQuery {
-  /** The answer folds the newest 1000 ledger rows and returns the first limit payments; there is no page_token (truncated says when the window was full) */
+  page_size?: number;
+  page_token?: string;
+  /** The older name of page_size; page_size wins when both are given */
   limit?: number;
+  /** Words that must each appear in the payment's id, provider, provider reference, invoice id or amount (minor units); a payment also matches when its invoice's number, customer external id or customer name matches the whole search */
+  search?: string;
+  /** newest (the default) and oldest are by occurred_at */
+  sort?: "newest" | "oldest" | "amount" | "-amount";
+  /** paid, processing, failed or refunded, comma-separated: any of them */
+  status?: string;
+  /** charge or refund, comma-separated */
+  kind?: string;
+  /** Occurred at or after this time (a plain date is the start of that day, UTC) */
+  occurred_from?: string;
+  /** Only the payments of these invoices: up to 200 invoice ids, comma-separated */
+  invoice_id?: string;
+  /** Occurred before this time */
+  occurred_to?: string;
 }
 
 export interface ListPaymentsResponse {
   payments: Array<Payment>;
+  /** Always false: the whole ledger is read. Kept for older clients */
   truncated: boolean;
+  /** How many payments match */
+  total?: number;
+  /** The page_token of the next page; empty on the last one */
+  next_page_token?: string;
 }
 
 export interface ListPlansResponse {
@@ -2537,6 +2560,12 @@ export interface Payment {
   amount_minor: Int64;
   currency: string;
   occurred_at: string;
+  /** The number of the payment's invoice; absent for a payment without an invoice or an invoice without a number yet */
+  invoice_number?: string;
+  /** The external id of the invoice's customer, as frozen on the invoice; absent without an invoice */
+  customer_external_id?: string;
+  /** The customer's name as frozen on the invoice; absent when none was recorded */
+  customer_name?: string;
 }
 
 export interface PaymentLink {

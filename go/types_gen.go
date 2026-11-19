@@ -1927,7 +1927,10 @@ type Invoice struct {
 	ID                 string `json:"id"`
 	CustomerID         string `json:"customer_id"`
 	CustomerExternalID string `json:"customer_external_id"`
-	PeriodID           string `json:"period_id"`
+	// The customer's name as frozen on the invoice when it was issued; absent when none was recorded. Filled on the
+	// list (GET /v1/invoices) and on a single invoice
+	CustomerName string `json:"customer_name,omitempty"`
+	PeriodID     string `json:"period_id"`
 	// FEE: a fixed fee invoiced in advance for one period, or what a plan change moved. LINK: made from an ad-hoc
 	// payment link. One of: REGULAR, CORRECTION, FEE, LINK.
 	Kind          string `json:"kind"`
@@ -2190,8 +2193,13 @@ type ListPaymentLinksResponse struct {
 
 // ListPaymentsResponse is the response of ListPayments.
 type ListPaymentsResponse struct {
-	Payments  []Payment `json:"payments"`
-	Truncated bool      `json:"truncated"`
+	Payments []Payment `json:"payments"`
+	// Always false: the whole ledger is read. Kept for older clients
+	Truncated bool `json:"truncated"`
+	// How many payments match
+	Total int `json:"total,omitempty"`
+	// The page_token of the next page; empty on the last one
+	NextPageToken string `json:"next_page_token,omitempty"`
 }
 
 // ListPlansResponse is the response of ListPlans.
@@ -2330,6 +2338,13 @@ type Payment struct {
 	AmountMinor Int64     `json:"amount_minor"`
 	Currency    string    `json:"currency"`
 	OccurredAt  time.Time `json:"occurred_at"`
+	// The number of the payment's invoice; absent for a payment without an invoice or an invoice without a number
+	// yet
+	InvoiceNumber string `json:"invoice_number,omitempty"`
+	// The external id of the invoice's customer, as frozen on the invoice; absent without an invoice
+	CustomerExternalID string `json:"customer_external_id,omitempty"`
+	// The customer's name as frozen on the invoice; absent when none was recorded
+	CustomerName string `json:"customer_name,omitempty"`
 }
 
 // PaymentLink is an object of the API; see components.schemas.PaymentLink in api/openapi/v1.yaml.
@@ -4482,9 +4497,26 @@ func (p *ListPaymentLinksParams) values() url.Values {
 
 // ListPaymentsParams are the query parameters of ListPayments.
 type ListPaymentsParams struct {
-	// The answer folds the newest 1000 ledger rows and returns the first limit payments; there is no page_token
-	// (truncated says when the window was full)
+	PageSize  *int
+	PageToken string
+	// The older name of page_size; page_size wins when both are given
 	Limit *int
+	// Words that must each appear in the payment's id, provider, provider reference, invoice id or amount (minor
+	// units); a payment also matches when its invoice's number, customer external id or customer name matches the
+	// whole search
+	Search string
+	// newest (the default) and oldest are by occurred_at. One of: newest, oldest, amount, -amount.
+	Sort string
+	// paid, processing, failed or refunded, comma-separated: any of them
+	Status string
+	// charge or refund, comma-separated
+	Kind string
+	// Occurred at or after this time (a plain date is the start of that day, UTC)
+	OccurredFrom *time.Time
+	// Only the payments of these invoices: up to 200 invoice ids, comma-separated
+	InvoiceID string
+	// Occurred before this time
+	OccurredTo *time.Time
 }
 
 func (p *ListPaymentsParams) values() url.Values {
@@ -4492,8 +4524,35 @@ func (p *ListPaymentsParams) values() url.Values {
 	if p == nil {
 		return v
 	}
+	if p.PageSize != nil {
+		v.Set("page_size", strconv.Itoa(*p.PageSize))
+	}
+	if p.PageToken != "" {
+		v.Set("page_token", p.PageToken)
+	}
 	if p.Limit != nil {
 		v.Set("limit", strconv.Itoa(*p.Limit))
+	}
+	if p.Search != "" {
+		v.Set("search", p.Search)
+	}
+	if p.Sort != "" {
+		v.Set("sort", p.Sort)
+	}
+	if p.Status != "" {
+		v.Set("status", p.Status)
+	}
+	if p.Kind != "" {
+		v.Set("kind", p.Kind)
+	}
+	if p.OccurredFrom != nil {
+		v.Set("occurred_from", p.OccurredFrom.UTC().Format(time.RFC3339Nano))
+	}
+	if p.InvoiceID != "" {
+		v.Set("invoice_id", p.InvoiceID)
+	}
+	if p.OccurredTo != nil {
+		v.Set("occurred_to", p.OccurredTo.UTC().Format(time.RFC3339Nano))
 	}
 	return v
 }

@@ -1754,12 +1754,29 @@ class PaymentsResource:
     def __init__(self, client: Payrudder) -> None:
         self._client = client
 
-    def list_payments(self, *, limit: int | None = None, options: RequestOptions | None = None) -> m.ListPaymentsResponse:
-        """The tenant's payments (charges and refunds), newest first.
+    def list_payments(self, *, page_size: int | None = None, page_token: str | None = None, limit: int | None = None, search: str | None = None, sort: Literal["newest", "oldest", "amount", "-amount"] | None = None, status: str | None = None, kind: str | None = None, occurred_from: str | datetime | None = None, invoice_id: str | None = None, occurred_to: str | datetime | None = None, options: RequestOptions | None = None) -> m.ListPaymentsResponse:
+        """The tenant's payments (charges and refunds), newest first (or searched, narrowed and sorted).
 
         ``GET /v1/payments``
         """
-        return cast("m.ListPaymentsResponse", self._client._request("GET", "/v1/payments", query={"limit": limit}, response_wire='ListPaymentsResponse', options=options))
+        return cast("m.ListPaymentsResponse", self._client._request("GET", "/v1/payments", query={"page_size": page_size, "page_token": page_token, "limit": limit, "search": search, "sort": sort, "status": status, "kind": kind, "occurred_from": occurred_from, "invoice_id": invoice_id, "occurred_to": occurred_to}, response_wire='ListPaymentsResponse', options=options))
+
+    def iter_payments(self, *, page_size: int | None = None, limit: int | None = None, search: str | None = None, sort: Literal["newest", "oldest", "amount", "-amount"] | None = None, status: str | None = None, kind: str | None = None, occurred_from: str | datetime | None = None, invoice_id: str | None = None, occurred_to: str | datetime | None = None, options: RequestOptions | None = None) -> Iterator[m.Payment]:
+        """Every item of ``list_payments``, following ``next_page_token`` until the last page."""
+        token: str | None = None
+        while True:
+            page = self.list_payments(page_size=page_size, limit=limit, search=search, sort=sort, status=status, kind=kind, occurred_from=occurred_from, invoice_id=invoice_id, occurred_to=occurred_to, options=options, page_token=token)
+            yield from page.get("payments", [])
+            token = page.get("next_page_token") or None
+            if token is None:
+                return
+
+    def get_payment(self, id: str, *, options: RequestOptions | None = None) -> m.Payment:
+        """One payment, as the list shows it.
+
+        ``GET /v1/payments/{id}``
+        """
+        return cast("m.Payment", self._client._request("GET", f"/v1/payments/{_p(id)}", response_wire='Payment', options=options))
 
 
 class DisputesResource:
@@ -3818,12 +3835,30 @@ class AsyncPaymentsResource:
     def __init__(self, client: AsyncPayrudder) -> None:
         self._client = client
 
-    async def list_payments(self, *, limit: int | None = None, options: RequestOptions | None = None) -> m.ListPaymentsResponse:
-        """The tenant's payments (charges and refunds), newest first.
+    async def list_payments(self, *, page_size: int | None = None, page_token: str | None = None, limit: int | None = None, search: str | None = None, sort: Literal["newest", "oldest", "amount", "-amount"] | None = None, status: str | None = None, kind: str | None = None, occurred_from: str | datetime | None = None, invoice_id: str | None = None, occurred_to: str | datetime | None = None, options: RequestOptions | None = None) -> m.ListPaymentsResponse:
+        """The tenant's payments (charges and refunds), newest first (or searched, narrowed and sorted).
 
         ``GET /v1/payments``
         """
-        return cast("m.ListPaymentsResponse", await self._client._request("GET", "/v1/payments", query={"limit": limit}, response_wire='ListPaymentsResponse', options=options))
+        return cast("m.ListPaymentsResponse", await self._client._request("GET", "/v1/payments", query={"page_size": page_size, "page_token": page_token, "limit": limit, "search": search, "sort": sort, "status": status, "kind": kind, "occurred_from": occurred_from, "invoice_id": invoice_id, "occurred_to": occurred_to}, response_wire='ListPaymentsResponse', options=options))
+
+    async def iter_payments(self, *, page_size: int | None = None, limit: int | None = None, search: str | None = None, sort: Literal["newest", "oldest", "amount", "-amount"] | None = None, status: str | None = None, kind: str | None = None, occurred_from: str | datetime | None = None, invoice_id: str | None = None, occurred_to: str | datetime | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.Payment]:
+        """Every item of ``list_payments``, following ``next_page_token`` until the last page."""
+        token: str | None = None
+        while True:
+            page = await self.list_payments(page_size=page_size, limit=limit, search=search, sort=sort, status=status, kind=kind, occurred_from=occurred_from, invoice_id=invoice_id, occurred_to=occurred_to, options=options, page_token=token)
+            for item in page.get("payments", []):
+                yield item
+            token = page.get("next_page_token") or None
+            if token is None:
+                return
+
+    async def get_payment(self, id: str, *, options: RequestOptions | None = None) -> m.Payment:
+        """One payment, as the list shows it.
+
+        ``GET /v1/payments/{id}``
+        """
+        return cast("m.Payment", await self._client._request("GET", f"/v1/payments/{_p(id)}", response_wire='Payment', options=options))
 
 
 class AsyncDisputesResource:

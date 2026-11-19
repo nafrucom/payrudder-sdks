@@ -199,6 +199,7 @@ import type {
   MailSettingsInput,
   MarkAffiliatePayoutPaidRequest,
   Meter,
+  Payment,
   PaymentLink,
   PaymentMethodSetup,
   PaymentWait,
@@ -266,7 +267,7 @@ export class AccountingResource {
   /**
    * Income and expenses of a period, one block per currency
    *
-   * Currencies are never converted or added together. Income is read from the invoices: an invoice counts on the UTC day its payment succeeded (gross is its total, tax its TAX lines), credit notes against paid invoices and invoices refunded in full are the refunds. Provider commission is not recorded by Payrudder; `provider_fees_minor` is what the tenant entered as `payment_fees` expenses, and `provider_fees_recorded` is false when there is none. `expenses_minor` includes those fees. `profit_minor` is net income minus expenses. The series has one point for every day (or month) of the period. `app_id` limits the expenses, not the income.
+   * Currencies are never converted or added together. Income is read from the invoices: an invoice counts on the day its payment succeeded, a day of the tenant's time zone like `from` and `to` (gross is its total, tax its TAX lines), credit notes against paid invoices and invoices refunded in full are the refunds. Provider commission is not recorded by Payrudder; `provider_fees_minor` is what the tenant entered as `payment_fees` expenses, and `provider_fees_recorded` is false when there is none. `expenses_minor` includes those fees. `profit_minor` is net income minus expenses. The series has one point for every day (or month) of the period. `app_id` limits the expenses, not the income.
    *
    * `GET /v1/accounting/summary`
    */
@@ -2008,14 +2009,25 @@ export class PaymentsResource {
   constructor(private readonly t: Transport) {}
 
   /**
-   * The tenant's payments (charges and refunds), newest first
+   * The tenant's payments (charges and refunds), newest first (or searched, narrowed and sorted)
    *
-   * Reads the tenant's own payment ledger from the payment service and folds it: the rows one provider reference left behind (a charge that was pending and then succeeded) are one payment with its most settled outcome. Amounts are minor-unit strings, each in its own currency; they are never summed across currencies. `truncated` says the newest 1000 ledger rows were all read, so older payments may exist. Provider references and decline details are not part of the answer. `503` when the payment service does not answer.
+   * Reads the tenant's whole payment ledger from the payment service and folds it: the rows one provider reference left behind (a charge that was pending and then succeeded) are one payment with its most settled outcome. Amounts are minor-unit strings, each in its own currency; they are never summed across currencies. The list is searched, narrowed and sorted on the server, pages by position (`page_token` is the `next_page_token` of the page before) and reports `total`. Provider references and decline details are not part of the answer. `503` when the payment service does not answer.
    *
    * `GET /v1/payments`
    */
   listPayments(query?: ListPaymentsQuery, options?: RequestOptions): Promise<ListPaymentsResponse> {
     return this.t.request<ListPaymentsResponse>({ method: "GET", path: `/v1/payments`, query, response: "json" }, options);
+  }
+
+  /**
+   * One payment, as the list shows it
+   *
+   * `id` is the payment's `id` from `GET /v1/payments`. A payment that settled since keeps answering under the id the list gives now; the id of a row it was folded from does not. `404 gateway.payments.not_found` for a payment that is not yours, `503` when the payment service does not answer.
+   *
+   * `GET /v1/payments/{id}`
+   */
+  getPayment(id: string, options?: RequestOptions): Promise<Payment> {
+    return this.t.request<Payment>({ method: "GET", path: `/v1/payments/${seg(id)}`, response: "json" }, options);
   }
 }
 

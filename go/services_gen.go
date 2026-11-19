@@ -188,11 +188,12 @@ func (s *AccountingService) ExportAccountingCsv(ctx context.Context, params *Exp
 // GetAccountingSummary: Income and expenses of a period, one block per currency (GET /v1/accounting/summary).
 //
 // Currencies are never converted or added together. Income is read from the invoices: an invoice counts on the
-// UTC day its payment succeeded (gross is its total, tax its TAX lines), credit notes against paid invoices and
-// invoices refunded in full are the refunds. Provider commission is not recorded by Payrudder;
-// `provider_fees_minor` is what the tenant entered as `payment_fees` expenses, and `provider_fees_recorded` is
-// false when there is none. `expenses_minor` includes those fees. `profit_minor` is net income minus expenses.
-// The series has one point for every day (or month) of the period. `app_id` limits the expenses, not the income.
+// day its payment succeeded, a day of the tenant's time zone like `from` and `to` (gross is its total, tax its
+// TAX lines), credit notes against paid invoices and invoices refunded in full are the refunds. Provider
+// commission is not recorded by Payrudder; `provider_fees_minor` is what the tenant entered as `payment_fees`
+// expenses, and `provider_fees_recorded` is false when there is none. `expenses_minor` includes those fees.
+// `profit_minor` is net income minus expenses. The series has one point for every day (or month) of the period.
+// `app_id` limits the expenses, not the income.
 func (s *AccountingService) GetAccountingSummary(ctx context.Context, params *GetAccountingSummaryParams, opts ...RequestOption) (*AccountingSummary, error) {
 	var out AccountingSummary
 	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/accounting/summary", query: params.values(), body: nil}, &out, opts); err != nil {
@@ -2631,16 +2632,48 @@ func (s *PaymentLinksService) GetPaymentLink(ctx context.Context, id string, opt
 // PaymentsService is the payments namespace of the API.
 type PaymentsService service
 
-// ListPayments: The tenant's payments (charges and refunds), newest first (GET /v1/payments).
+// ListPayments: The tenant's payments (charges and refunds), newest first (or searched, narrowed and sorted)
+// (GET /v1/payments).
 //
-// Reads the tenant's own payment ledger from the payment service and folds it: the rows one provider reference
-// left behind (a charge that was pending and then succeeded) are one payment with its most settled outcome.
-// Amounts are minor-unit strings, each in its own currency; they are never summed across currencies.
-// `truncated` says the newest 1000 ledger rows were all read, so older payments may exist. Provider references
-// and decline details are not part of the answer. `503` when the payment service does not answer.
+// Reads the tenant's whole payment ledger from the payment service and folds it: the rows one provider
+// reference left behind (a charge that was pending and then succeeded) are one payment with its most settled
+// outcome. Amounts are minor-unit strings, each in its own currency; they are never summed across currencies.
+// The list is searched, narrowed and sorted on the server, pages by position (`page_token` is the
+// `next_page_token` of the page before) and reports `total`. Provider references and decline details are not
+// part of the answer. `503` when the payment service does not answer.
 func (s *PaymentsService) ListPayments(ctx context.Context, params *ListPaymentsParams, opts ...RequestOption) (*ListPaymentsResponse, error) {
 	var out ListPaymentsResponse
 	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/payments", query: params.values(), body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ListPaymentsAll walks every page of ListPayments and yields the items one by one. It stops at the first
+// error, which is yielded once.
+func (s *PaymentsService) ListPaymentsAll(ctx context.Context, params *ListPaymentsParams, opts ...RequestOption) iter.Seq2[Payment, error] {
+	return paginate(func(token string) ([]Payment, string, error) {
+		var p ListPaymentsParams
+		if params != nil {
+			p = *params
+		}
+		p.PageToken = token
+		page, err := s.ListPayments(ctx, &p, opts...)
+		if err != nil {
+			return nil, "", err
+		}
+		return page.Payments, page.NextPageToken, nil
+	})
+}
+
+// GetPayment: One payment, as the list shows it (GET /v1/payments/{id}).
+//
+// `id` is the payment's `id` from `GET /v1/payments`. A payment that settled since keeps answering under the id
+// the list gives now; the id of a row it was folded from does not. `404 gateway.payments.not_found` for a
+// payment that is not yours, `503` when the payment service does not answer.
+func (s *PaymentsService) GetPayment(ctx context.Context, id string, opts ...RequestOption) (*Payment, error) {
+	var out Payment
+	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/payments/" + url.PathEscape(id), query: nil, body: nil}, &out, opts); err != nil {
 		return nil, err
 	}
 	return &out, nil
