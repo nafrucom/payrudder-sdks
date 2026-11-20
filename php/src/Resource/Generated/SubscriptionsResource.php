@@ -17,6 +17,7 @@ use Payrudder\Model\ChangePlanResponse;
 use Payrudder\Model\ChangeQuote;
 use Payrudder\Model\ChangeRequest;
 use Payrudder\Model\ChangeSubscriptionResponse;
+use Payrudder\Model\CreateSubscriptionCheckoutResponse;
 use Payrudder\Model\CreateSubscriptionRequest;
 use Payrudder\Model\ListSubscriptionsResponse;
 use Payrudder\Model\Subscription;
@@ -234,6 +235,19 @@ final class SubscriptionsResource extends AbstractResource
     public function changeSubscription(string $id, ChangeRequest|array $body, ?RequestOptions $options = null): ChangeSubscriptionResponse
     {
         return ChangeSubscriptionResponse::fromArray($this->call('POST', '/v1/subscriptions/' . rawurlencode($id) . '/change', [], Cast::body($body), $options));
+    }
+
+    /**
+     * The page where the customer starts a subscription a payment provider renews (Paddle) (POST /v1/subscriptions/{id}/checkout).
+     *
+     * @param string $id
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function createSubscriptionCheckout(string $id, ?RequestOptions $options = null): CreateSubscriptionCheckoutResponse
+    {
+        return CreateSubscriptionCheckoutResponse::fromArray($this->call('POST', '/v1/subscriptions/' . rawurlencode($id) . '/checkout', [], null, $options));
     }
 
     /**

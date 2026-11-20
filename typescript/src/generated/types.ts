@@ -3,71 +3,6 @@ import type { Int64, Int64Input } from "../int64";
 
 export type { Int64, Int64Input };
 
-export interface AccountingCoupon {
-  coupon_code: string;
-  invoices: Int64;
-  /** What those invoices came to before the coupon: positive lines, tax excluded */
-  gross_minor: Int64;
-  discount_minor: Int64;
-  /** gross - discount */
-  net_minor: Int64;
-}
-
-/** One currency of the period. Every amount is int64 minor units as a string. */
-export interface AccountingCurrency {
-  currency: string;
-  /** Invoices paid in the period, tax included */
-  gross_income_minor: Int64;
-  /** The tax lines of those invoices, less the tax that credit notes issued in the period gave back (it is negative in a period that gave back more than it collected) */
-  tax_minor: Int64;
-  /** Credit notes against paid invoices plus invoices refunded in full */
-  refunds_minor: Int64;
-  /** gross - tax - refunds */
-  net_income_minor: Int64;
-  /** Every live occurrence in the period, provider fees included */
-  expenses_minor: Int64;
-  /** The payment_fees expenses; meaningful only when provider_fees_recorded */
-  provider_fees_minor: Int64;
-  /** False: no commission was entered, which is not the same as zero */
-  provider_fees_recorded: boolean;
-  /** net income - expenses; negative for a loss */
-  profit_minor: Int64;
-  paid_invoices: Int64;
-  expense_by_category: Array<{
-    category: ExpenseCategory;
-    amount_minor: Int64;
-  }>;
-  series: Array<AccountingPoint>;
-  /** What coupons took off the paid invoices (contra-revenue, a positive number). gross_income_minor is already after it */
-  discounts_minor: Int64;
-  /** Revenue before discounts: gross - tax + discounts */
-  sales_minor: Int64;
-  /** Gross, discounts and net per coupon, most discount first */
-  coupons: Array<AccountingCoupon>;
-}
-
-export interface AccountingPoint {
-  /** The day, or the first day of the month */
-  bucket: string;
-  gross_income_minor: Int64;
-  tax_minor: Int64;
-  refunds_minor: Int64;
-  net_income_minor: Int64;
-  expenses_minor: Int64;
-  profit_minor: Int64;
-  /** What coupons took off the invoices paid in this bucket */
-  discounts_minor: Int64;
-}
-
-export interface AccountingSummary {
-  from_date: string;
-  to_date: string;
-  granularity: "day" | "month";
-  app_id: string;
-  /** Ordered by currency code; a currency with no income and no expenses has no block */
-  currencies: Array<AccountingCurrency>;
-}
-
 export interface AddBlocklistEntryRequest {
   kind: "email" | "tax_id" | "external_id";
   value: string;
@@ -794,6 +729,8 @@ export interface CreatedPaymentLink {
   promotion_code: string;
   /** The agreements the payer accepts on this link's page instead of the seller's tenant-wide setting (GET /v1/contracts/settings); empty: the setting applies */
   required_contracts: Array<"distance_sales" | "pre_info" | "tos" | "privacy">;
+  /** The "return to app" address this link's page offers instead of the app's setting; empty: the app's */
+  return_url: string;
   /** kind invoice: the invoice; empty for an ad-hoc link (its invoices are made on use) */
   invoice_id: string;
   customer_external_id: string;
@@ -880,6 +817,8 @@ export interface CreatePaymentLinkRequest {
   promotion_code?: string;
   /** Optional: the agreements the payer must accept on this link's page. The list replaces the seller's tenant-wide required_kinds for this link (it does not add to it); empty or absent: the setting applies. The texts must be published before the link is used, or the page offers no way to pay. An ad-hoc link hands its list to the invoice link the payer continues on. 400 billing.payment_link.bad_required_contracts for an unknown kind or one named twice */
   required_contracts?: Array<"distance_sales" | "pre_info" | "tos" | "privacy">;
+  /** Optional: the "return to app" address the link's page offers its payer, instead of the app's setting (PATCH /app/v1/apps/{id}). https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the invoice link the payer continues on. 400 billing.payment_link.bad_return_url otherwise */
+  return_url?: string;
   /** Default 30 for adhoc, 90 for invoice */
   expires_in_days?: number;
   idempotency_key?: string;
@@ -915,6 +854,8 @@ export interface CreatePaymentLinkRequestParams {
   promotion_code?: string;
   /** Optional: the agreements the payer must accept on this link's page. The list replaces the seller's tenant-wide required_kinds for this link (it does not add to it); empty or absent: the setting applies. The texts must be published before the link is used, or the page offers no way to pay. An ad-hoc link hands its list to the invoice link the payer continues on. 400 billing.payment_link.bad_required_contracts for an unknown kind or one named twice */
   required_contracts?: Array<"distance_sales" | "pre_info" | "tos" | "privacy">;
+  /** Optional: the "return to app" address the link's page offers its payer, instead of the app's setting (PATCH /app/v1/apps/{id}). https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the invoice link the payer continues on. 400 billing.payment_link.bad_return_url otherwise */
+  return_url?: string;
   /** Default 30 for adhoc, 90 for invoice */
   expires_in_days?: number;
   idempotency_key?: string;
@@ -973,6 +914,12 @@ export interface CreatePromotionCodesParams {
 
 export interface CreatePromotionCodesResponse {
   codes: Array<PromotionCode>;
+}
+
+export interface CreateSubscriptionCheckoutResponse {
+  /** The page to send the customer to */
+  url: string;
+  expires_at: string;
 }
 
 export interface CreateSubscriptionRequest {
@@ -1514,141 +1461,6 @@ export interface EventResult {
   error_message?: string;
 }
 
-export interface Expense {
-  id: string;
-  app_id: string;
-  vendor: string;
-  category: ExpenseCategory;
-  amount_minor: Int64;
-  currency: string;
-  incurred_on: string;
-  note: string;
-  recurring: "none" | "monthly" | "yearly";
-  recurring_until: string;
-  void_time: string | null;
-  void_reason: string;
-  create_time: string | null;
-  update_time: string | null;
-  tax_minor: Int64;
-  attachment_asset_id: string;
-}
-
-export type ExpenseCategory = "infrastructure" | "payment_fees" | "marketing" | "payroll" | "tax" | "software" | "other";
-
-export interface ExpenseInbox {
-  token: string;
-  app_id: string;
-  /** invoices+<token>@<inbound domain>; empty when no inbound domain is configured */
-  address: string;
-}
-
-export interface ExpenseInput {
-  vendor: string;
-  category: ExpenseCategory;
-  /** int64 minor units, above zero (a number is accepted too) */
-  amount_minor: Int64;
-  currency: string;
-  /** The day, or the first day of a recurring expense (UTC) */
-  incurred_on: string;
-  note?: string;
-  /** The app of the account the cost belongs to; leave out for the whole tenant */
-  app_id?: string;
-  recurring?: "none" | "monthly" | "yearly";
-  /** Last day an occurrence may fall on; leave out for no end. Only for a recurring expense. */
-  recurring_until?: string;
-  /** The tax inside amount_minor, when the receipt shows it (informational; no summary reads it) */
-  tax_minor?: Int64;
-  /** The receipt or invoice kept with the expense: a READY general asset of the tenant */
-  attachment_asset_id?: string;
-}
-
-export interface ExpenseInputParams {
-  vendor: string;
-  category: ExpenseCategory;
-  /** int64 minor units, above zero (a number is accepted too) */
-  amount_minor: Int64Input;
-  currency: string;
-  /** The day, or the first day of a recurring expense (UTC) */
-  incurred_on: string;
-  note?: string;
-  /** The app of the account the cost belongs to; leave out for the whole tenant */
-  app_id?: string;
-  recurring?: "none" | "monthly" | "yearly";
-  /** Last day an occurrence may fall on; leave out for no end. Only for a recurring expense. */
-  recurring_until?: string;
-  /** The tax inside amount_minor, when the receipt shows it (informational; no summary reads it) */
-  tax_minor?: Int64Input;
-  /** The receipt or invoice kept with the expense: a READY general asset of the tenant */
-  attachment_asset_id?: string;
-}
-
-export interface ExpensePage {
-  expenses: Array<Expense>;
-  next_page_token: string;
-}
-
-export interface ExpenseRule {
-  id: string;
-  /** Case-insensitive text the vendor name contains */
-  vendor_match: string;
-  category: ExpenseCategory;
-  currency: string;
-  /** The tax share of the amount, in basis points */
-  tax_bps: number;
-  /** What this vendor usually bills, in minor units; 0: no expectation */
-  expected_amount_minor: Int64;
-  tolerance_bps: number;
-  /** Needs an expected amount */
-  auto_approve: boolean;
-  app_id: string;
-}
-
-export interface ExpenseRuleInput {
-  id?: string;
-  /** Case-insensitive text the vendor name contains */
-  vendor_match: string;
-  category: ExpenseCategory;
-  currency: string;
-  /** The tax share of the amount, in basis points */
-  tax_bps?: number;
-  /** What this vendor usually bills, in minor units; 0: no expectation */
-  expected_amount_minor?: Int64;
-  tolerance_bps?: number;
-  /** Needs an expected amount */
-  auto_approve?: boolean;
-  app_id?: string;
-}
-
-export interface ExpenseRuleInputParams {
-  id?: string;
-  /** Case-insensitive text the vendor name contains */
-  vendor_match: string;
-  category: ExpenseCategory;
-  currency: string;
-  /** The tax share of the amount, in basis points */
-  tax_bps?: number;
-  /** What this vendor usually bills, in minor units; 0: no expectation */
-  expected_amount_minor?: Int64Input;
-  tolerance_bps?: number;
-  /** Needs an expected amount */
-  auto_approve?: boolean;
-  app_id?: string;
-}
-
-export interface ExportAccountingCouponsCsvQuery {
-  from: string;
-  to: string;
-  app_id?: string;
-  granularity?: "day" | "month";
-}
-
-export interface ExportAccountingCsvQuery {
-  from: string;
-  to: string;
-  app_id?: string;
-  granularity?: "day" | "month";
-}
-
 export interface ExportAffiliateJournalQuery {
   payout_id?: string;
   currency?: string;
@@ -1667,16 +1479,6 @@ export interface ExportAuditEventsQuery {
   from?: string;
   /** Exclusive, RFC 3339 */
   to?: string;
-}
-
-export interface GetAccountingSummaryQuery {
-  /** First day, inside the period */
-  from: string;
-  /** Last day, inside the period; at most five years after `from` */
-  to: string;
-  app_id?: string;
-  /** Default: day up to 62 days, month beyond. Day is allowed for at most 366 days. */
-  granularity?: "day" | "month";
 }
 
 export interface GetAffiliateBalancesQuery {
@@ -1814,11 +1616,6 @@ export interface GetEntitlementQuery {
   period?: string;
 }
 
-export interface GetExpenseInboxQuery {
-  /** The inbox of one app instead of the whole tenant */
-  app_id?: string;
-}
-
 export interface GetPriceChangeQuery {
   state?: "scheduled" | "applied" | "withdrawn" | "skipped";
   page_size?: number;
@@ -1922,23 +1719,6 @@ export interface GrantCustomerCouponRequest {
 
 export interface GrantCustomerCouponResponse {
   granted: boolean;
-}
-
-export interface InboxItem {
-  id: string;
-  app_id: string;
-  from: string;
-  subject: string;
-  filename: string;
-  content_type: string;
-  size_bytes: Int64;
-  status: "to_review" | "accepted" | "dismissed";
-  expense_id: string;
-  receive_time: string | null;
-}
-
-export interface InboxItemPage {
-  items: Array<InboxItem>;
 }
 
 export interface IncomingEvent {
@@ -2347,28 +2127,6 @@ export interface ListEntitlementsResponse {
   items: Array<EntitlementStatus>;
 }
 
-export interface ListExpenseRulesResponse {
-  rules: Array<ExpenseRule>;
-}
-
-export interface ListExpensesQuery {
-  category?: ExpenseCategory;
-  app_id?: string;
-  currency?: string;
-  /** Only entries whose (first) day is on or after this day */
-  from?: string;
-  /** Only entries whose (first) day is on or before this day */
-  to?: string;
-  include_voided?: boolean;
-  page_size?: number;
-  page_token?: string;
-}
-
-export interface ListInboxItemsQuery {
-  status?: "to_review" | "accepted" | "dismissed";
-  page_size?: number;
-}
-
 export interface ListInvoicesQuery {
   /** Customer external id */
   customer?: string;
@@ -2645,6 +2403,8 @@ export interface PaymentLink {
   promotion_code: string;
   /** The agreements the payer accepts on this link's page instead of the seller's tenant-wide setting (GET /v1/contracts/settings); empty: the setting applies */
   required_contracts: Array<"distance_sales" | "pre_info" | "tos" | "privacy">;
+  /** The "return to app" address this link's page offers instead of the app's setting; empty: the app's */
+  return_url: string;
   /** kind invoice: the invoice; empty for an ad-hoc link (its invoices are made on use) */
   invoice_id: string;
   customer_external_id: string;
@@ -3134,11 +2894,6 @@ export interface RequestContractWithdrawalRefundRequestParams {
   amount_minor?: Int64Input;
 }
 
-export interface ResolveInboxItemRequest {
-  status: "accepted" | "dismissed";
-  expense_id?: string;
-}
-
 export interface ReverseAffiliateCommissionRequest {
   invoice_id: string;
   reason: "chargeback" | "manual";
@@ -3171,10 +2926,6 @@ export interface RevokeInvoiceLinksResponse {
 
 export interface RevokePortalLinksResponse {
   revoked: number;
-}
-
-export interface RotateExpenseInboxQuery {
-  app_id?: string;
 }
 
 export interface RoutingRules {
@@ -3464,14 +3215,6 @@ export interface UploadSession {
   status: "OPEN" | "COMPLETED" | "EXPIRED" | "ABORTED";
   expire_time: string | null;
   files: Array<UploadFile>;
-}
-
-export interface VoidExpenseQuery {
-  reason?: string;
-}
-
-export interface VoidExpenseRequest {
-  reason: string;
 }
 
 export interface WebhookDelivery {

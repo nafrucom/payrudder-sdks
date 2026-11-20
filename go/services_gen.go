@@ -21,8 +21,6 @@ var (
 
 // services holds the resource namespaces of a Client, one per first path segment of /v1.
 type services struct {
-	// Accounting groups the accounting operations.
-	Accounting *AccountingService
 	// Affiliates groups the affiliates operations.
 	Affiliates *AffiliatesService
 	// Analytics groups the analytics operations.
@@ -59,12 +57,6 @@ type services struct {
 	EInvoices *EInvoicesService
 	// Events groups the events operations.
 	Events *EventsService
-	// ExpenseInbox groups the expense inbox operations.
-	ExpenseInbox *ExpenseInboxService
-	// ExpenseRules groups the expense rules operations.
-	ExpenseRules *ExpenseRulesService
-	// Expenses groups the expenses operations.
-	Expenses *ExpensesService
 	// Invoices groups the invoices operations.
 	Invoices *InvoicesService
 	// MailMessages groups the mail messages operations.
@@ -110,7 +102,6 @@ type services struct {
 }
 
 func (s *services) initServices(c *Client) {
-	s.Accounting = (*AccountingService)(&service{c: c})
 	s.Affiliates = (*AffiliatesService)(&service{c: c})
 	s.Analytics = (*AnalyticsService)(&service{c: c})
 	s.Assets = (*AssetsService)(&service{c: c})
@@ -129,9 +120,6 @@ func (s *services) initServices(c *Client) {
 	s.DunningSettings = (*DunningSettingsService)(&service{c: c})
 	s.EInvoices = (*EInvoicesService)(&service{c: c})
 	s.Events = (*EventsService)(&service{c: c})
-	s.ExpenseInbox = (*ExpenseInboxService)(&service{c: c})
-	s.ExpenseRules = (*ExpenseRulesService)(&service{c: c})
-	s.Expenses = (*ExpensesService)(&service{c: c})
 	s.Invoices = (*InvoicesService)(&service{c: c})
 	s.MailMessages = (*MailMessagesService)(&service{c: c})
 	s.MailPreviews = (*MailPreviewsService)(&service{c: c})
@@ -153,53 +141,6 @@ func (s *services) initServices(c *Client) {
 	s.Tenant = (*TenantService)(&service{c: c})
 	s.WebhookDeliveries = (*WebhookDeliveriesService)(&service{c: c})
 	s.WebhookEndpoints = (*WebhookEndpointsService)(&service{c: c})
-}
-
-// AccountingService is the accounting namespace of the API.
-type AccountingService service
-
-// ExportAccountingCouponsCsv: Gross sales, discounts and net per coupon as CSV (GET /v1/accounting/coupons.csv).
-//
-// The query of the summary. One row per currency and coupon over the invoices paid in the period: their number,
-// what they came to before the coupon (positive lines, tax excluded), what the coupon took off, and the net.
-// Currencies are never added together.
-func (s *AccountingService) ExportAccountingCouponsCsv(ctx context.Context, params *ExportAccountingCouponsCsvParams, opts ...RequestOption) ([]byte, error) {
-	var out []byte
-	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/accounting/coupons.csv", query: params.values(), body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// ExportAccountingCsv: The accounting series as CSV (GET /v1/accounting/export.csv).
-//
-// The query of the summary. One row per currency and day (or month), then a `total` row per currency; amounts
-// are minor units. The `provider_fees_minor` of a total row is `not_recorded` when no `payment_fees` expense
-// exists. `discounts_minor` is what coupons took off (contra-revenue) and `sales_before_discounts_minor` is
-// gross - tax + discounts.
-func (s *AccountingService) ExportAccountingCsv(ctx context.Context, params *ExportAccountingCsvParams, opts ...RequestOption) ([]byte, error) {
-	var out []byte
-	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/accounting/export.csv", query: params.values(), body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// GetAccountingSummary: Income and expenses of a period, one block per currency (GET /v1/accounting/summary).
-//
-// Currencies are never converted or added together. Income is read from the invoices: an invoice counts on the
-// day its payment succeeded, a day of the tenant's time zone like `from` and `to` (gross is its total, tax its
-// TAX lines), credit notes against paid invoices and invoices refunded in full are the refunds. Provider
-// commission is not recorded by Payrudder; `provider_fees_minor` is what the tenant entered as `payment_fees`
-// expenses, and `provider_fees_recorded` is false when there is none. `expenses_minor` includes those fees.
-// `profit_minor` is net income minus expenses. The series has one point for every day (or month) of the period.
-// `app_id` limits the expenses, not the income.
-func (s *AccountingService) GetAccountingSummary(ctx context.Context, params *GetAccountingSummaryParams, opts ...RequestOption) (*AccountingSummary, error) {
-	var out AccountingSummary
-	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/accounting/summary", query: params.values(), body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
 }
 
 // AffiliatesService is the affiliates namespace of the API.
@@ -2039,200 +1980,6 @@ func (s *EventsService) CorrectEvents(ctx context.Context, req *CorrectEventsReq
 	return &out, nil
 }
 
-// ExpenseInboxService is the expense inbox namespace of the API.
-type ExpenseInboxService service
-
-// GetExpenseInbox: The tenant's invoice inbox address (GET /v1/expense-inbox).
-//
-// Invoices received by mail are forwarded to `invoices+<token>@<inbound domain>`. The attachments wait as items
-// to review; the console reads them in the browser. Made on first use. `address` is empty until the deployment
-// has an inbound mail domain.
-func (s *ExpenseInboxService) GetExpenseInbox(ctx context.Context, params *GetExpenseInboxParams, opts ...RequestOption) (*ExpenseInbox, error) {
-	var out ExpenseInbox
-	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/expense-inbox", query: params.values(), body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// ListInboxItems: The attachments received by mail, newest first (GET /v1/expense-inbox/items).
-//
-// Not paged: the newest page_size items; there is no page_token, so older items come into view once the newer
-// ones are resolved.
-func (s *ExpenseInboxService) ListInboxItems(ctx context.Context, params *ListInboxItemsParams, opts ...RequestOption) (*InboxItemPage, error) {
-	var out InboxItemPage
-	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/expense-inbox/items", query: params.values(), body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// GetInboxItemFile: The bytes of a received attachment (GET /v1/expense-inbox/items/{id}/file).
-func (s *ExpenseInboxService) GetInboxItemFile(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
-	var out []byte
-	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/expense-inbox/items/" + url.PathEscape(id) + "/file", query: nil, body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// ResolveInboxItem: Mark a received attachment accepted or dismissed (POST
-// /v1/expense-inbox/items/{id}/resolve).
-//
-// An item is resolved once. Accepting records the expense that was made from it.
-func (s *ExpenseInboxService) ResolveInboxItem(ctx context.Context, id string, req *ResolveInboxItemRequest, opts ...RequestOption) (*InboxItem, error) {
-	if req == nil {
-		req = &ResolveInboxItemRequest{}
-	}
-	var body any = req
-	var out InboxItem
-	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/expense-inbox/items/" + url.PathEscape(id) + "/resolve", query: nil, body: body}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// RotateExpenseInbox: Give the invoice inbox a new address (POST /v1/expense-inbox/rotate).
-//
-// Mail sent to the old address is dropped.
-func (s *ExpenseInboxService) RotateExpenseInbox(ctx context.Context, params *RotateExpenseInboxParams, opts ...RequestOption) (*ExpenseInbox, error) {
-	var out ExpenseInbox
-	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/expense-inbox/rotate", query: params.values(), body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// ExpenseRulesService is the expense rules namespace of the API.
-type ExpenseRulesService service
-
-// ListExpenseRules: The recurring-vendor rules (GET /v1/expense-rules).
-//
-// Not paged: the response is the complete list.
-func (s *ExpenseRulesService) ListExpenseRules(ctx context.Context, opts ...RequestOption) (*ListExpenseRulesResponse, error) {
-	var out ListExpenseRulesResponse
-	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/expense-rules", query: nil, body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// CreateExpenseRule: Add a recurring-vendor rule (POST /v1/expense-rules).
-//
-// A vendor whose name contains `vendor_match` gets the category, currency and tax of the rule. With
-// `auto_approve` the console records the expense on its own when the amount read from the document is within
-// `tolerance_bps` of `expected_amount_minor`.
-func (s *ExpenseRulesService) CreateExpenseRule(ctx context.Context, req *ExpenseRuleInput, opts ...RequestOption) (*ExpenseRule, error) {
-	if req == nil {
-		req = &ExpenseRuleInput{}
-	}
-	var body any = req
-	var out ExpenseRule
-	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/expense-rules", query: nil, body: body}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// DeleteExpenseRule: Delete a recurring-vendor rule (DELETE /v1/expense-rules/{id}).
-func (s *ExpenseRulesService) DeleteExpenseRule(ctx context.Context, id string, opts ...RequestOption) error {
-	return s.c.do(ctx, requestSpec{method: http.MethodDelete, path: "/v1/expense-rules/" + url.PathEscape(id), query: nil, body: nil}, nil, opts)
-}
-
-// UpdateExpenseRule: Replace a recurring-vendor rule (PUT /v1/expense-rules/{id}).
-func (s *ExpenseRulesService) UpdateExpenseRule(ctx context.Context, id string, req *ExpenseRuleInput, opts ...RequestOption) (*ExpenseRule, error) {
-	if req == nil {
-		req = &ExpenseRuleInput{}
-	}
-	var body any = req
-	var out ExpenseRule
-	if err := s.c.do(ctx, requestSpec{method: http.MethodPut, path: "/v1/expense-rules/" + url.PathEscape(id), query: nil, body: body}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// ExpensesService is the expenses namespace of the API.
-type ExpensesService service
-
-// ListExpenses: The expenses the tenant recorded, newest first (GET /v1/expenses).
-//
-// A recurring expense is one entry, listed at its first day. Voided expenses are left out unless
-// `include_voided` is true.
-func (s *ExpensesService) ListExpenses(ctx context.Context, params *ListExpensesParams, opts ...RequestOption) (*ExpensePage, error) {
-	var out ExpensePage
-	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/expenses", query: params.values(), body: nil}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// ListExpensesAll walks every page of ListExpenses and yields the items one by one. It stops at the first
-// error, which is yielded once.
-func (s *ExpensesService) ListExpensesAll(ctx context.Context, params *ListExpensesParams, opts ...RequestOption) iter.Seq2[Expense, error] {
-	return paginate(func(token string) ([]Expense, string, error) {
-		var p ListExpensesParams
-		if params != nil {
-			p = *params
-		}
-		p.PageToken = token
-		page, err := s.ListExpenses(ctx, &p, opts...)
-		if err != nil {
-			return nil, "", err
-		}
-		return page.Expenses, page.NextPageToken, nil
-	})
-}
-
-// CreateExpense: Record an expense (POST /v1/expenses).
-//
-// Money the tenant spent, in one currency. A monthly or yearly expense is one entry that falls on the same day
-// of every month or year from `incurred_on` (on the last day of a shorter month) until `recurring_until`; its
-// occurrences are worked out when a summary is asked for.
-func (s *ExpensesService) CreateExpense(ctx context.Context, req *ExpenseInput, opts ...RequestOption) (*Expense, error) {
-	if req == nil {
-		req = &ExpenseInput{}
-	}
-	var body any = req
-	var out Expense
-	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/expenses", query: nil, body: body}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// VoidExpense: Void an expense (DELETE /v1/expenses/{id}).
-//
-// The expense is not deleted: it leaves every summary and keeps its reason. The reason (1 to 200 characters)
-// comes in the body `{"reason": "..."}` or in `?reason=`.
-func (s *ExpensesService) VoidExpense(ctx context.Context, id string, req *VoidExpenseRequest, params *VoidExpenseParams, opts ...RequestOption) (*Expense, error) {
-	var body any
-	if req != nil {
-		body = req
-	}
-	var out Expense
-	if err := s.c.do(ctx, requestSpec{method: http.MethodDelete, path: "/v1/expenses/" + url.PathEscape(id), query: params.values(), body: body}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// UpdateExpense: Replace an expense (PUT /v1/expenses/{id}).
-//
-// The body replaces the whole record; a recurring expense changes in all its occurrences. A voided expense is
-// not edited (`billing.accounting.expense_voided`).
-func (s *ExpensesService) UpdateExpense(ctx context.Context, id string, req *ExpenseInput, opts ...RequestOption) (*Expense, error) {
-	if req == nil {
-		req = &ExpenseInput{}
-	}
-	var body any = req
-	var out Expense
-	if err := s.c.do(ctx, requestSpec{method: http.MethodPut, path: "/v1/expenses/" + url.PathEscape(id), query: nil, body: body}, &out, opts); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 // InvoicesService is the invoices namespace of the API.
 type InvoicesService service
 
@@ -3215,6 +2962,25 @@ func (s *SubscriptionsService) PreviewSubscriptionChange(ctx context.Context, id
 	var body any = req
 	var out ChangeQuote
 	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/subscriptions/" + url.PathEscape(id) + "/change-preview", query: nil, body: body}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// CreateSubscriptionCheckout: The page where the customer starts a subscription a payment provider renews
+// (Paddle) (POST /v1/subscriptions/{id}/checkout).
+//
+// For a running subscription whose provider renews subscriptions itself and that the customer has not
+// subscribed to there yet. The answer is a Payrudder page (a portal link of the customer, valid for 7 days)
+// with the provider's payment form inside it. Payrudder creates the plan's product and price at the provider
+// when it holds none. Once the customer has paid, the provider's subscription.created notification links the
+// provider's subscription to this one and the provider renews it from then on. 409
+// `plans.subscription.already_subscribed` when the customer has subscribed already,
+// `plans.subscription.no_checkout` for a subscription Payrudder renews (its invoices are paid on their own
+// pages).
+func (s *SubscriptionsService) CreateSubscriptionCheckout(ctx context.Context, id string, opts ...RequestOption) (*CreateSubscriptionCheckoutResponse, error) {
+	var out CreateSubscriptionCheckoutResponse
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/subscriptions/" + url.PathEscape(id) + "/checkout", query: nil, body: nil}, &out, opts); err != nil {
 		return nil, err
 	}
 	return &out, nil

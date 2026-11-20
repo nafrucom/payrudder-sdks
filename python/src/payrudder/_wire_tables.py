@@ -8,42 +8,6 @@ from __future__ import annotations
 from typing import Any
 
 MODELS: dict[str, dict[str, Any]] = {
-    'AccountingCoupon': {
-        'invoices': ('int',),
-        'gross_minor': ('int',),
-        'discount_minor': ('int',),
-        'net_minor': ('int',),
-    },
-    'AccountingCurrency': {
-        'gross_income_minor': ('int',),
-        'tax_minor': ('int',),
-        'refunds_minor': ('int',),
-        'net_income_minor': ('int',),
-        'expenses_minor': ('int',),
-        'provider_fees_minor': ('int',),
-        'profit_minor': ('int',),
-        'paid_invoices': ('int',),
-        'expense_by_category': ('list', ('model', 'AccountingCurrencyExpenseByCategoryItem')),
-        'series': ('list', ('model', 'AccountingPoint')),
-        'discounts_minor': ('int',),
-        'sales_minor': ('int',),
-        'coupons': ('list', ('model', 'AccountingCoupon')),
-    },
-    'AccountingCurrencyExpenseByCategoryItem': {
-        'amount_minor': ('int',),
-    },
-    'AccountingPoint': {
-        'gross_income_minor': ('int',),
-        'tax_minor': ('int',),
-        'refunds_minor': ('int',),
-        'net_income_minor': ('int',),
-        'expenses_minor': ('int',),
-        'profit_minor': ('int',),
-        'discounts_minor': ('int',),
-    },
-    'AccountingSummary': {
-        'currencies': ('list', ('model', 'AccountingCurrency')),
-    },
     'Affiliate': {
         'clicks': ('int',),
         'referrals': ('int',),
@@ -197,23 +161,6 @@ MODELS: dict[str, dict[str, Any]] = {
     'EInvoiceList': {
         'total': ('int',),
     },
-    'Expense': {
-        'amount_minor': ('int',),
-        'tax_minor': ('int',),
-    },
-    'ExpenseInput': {
-        'amount_minor': ('int',),
-        'tax_minor': ('int',),
-    },
-    'ExpensePage': {
-        'expenses': ('list', ('model', 'Expense')),
-    },
-    'ExpenseRule': {
-        'expected_amount_minor': ('int',),
-    },
-    'ExpenseRuleInput': {
-        'expected_amount_minor': ('int',),
-    },
     'GetAffiliateBalancesResponse': {
         'balances': ('list', ('model', 'AffiliateBalance')),
     },
@@ -272,12 +219,6 @@ MODELS: dict[str, dict[str, Any]] = {
     'GetTopCustomersResponse': {
         'customers': ('list', ('model', 'GetTopCustomersCustomer')),
     },
-    'InboxItem': {
-        'size_bytes': ('int',),
-    },
-    'InboxItemPage': {
-        'items': ('list', ('model', 'InboxItem')),
-    },
     'Invoice': {
         'subtotal_minor': ('int',),
         'total_minor': ('int',),
@@ -330,9 +271,6 @@ MODELS: dict[str, dict[str, Any]] = {
     },
     'ListDisputesResponse': {
         'disputes': ('list', ('model', 'Dispute')),
-    },
-    'ListExpenseRulesResponse': {
-        'rules': ('list', ('model', 'ExpenseRule')),
     },
     'ListInvoicesResponse': {
         'invoices': ('list', ('model', 'Invoice')),

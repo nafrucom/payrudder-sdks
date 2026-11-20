@@ -3,7 +3,6 @@ import { paginate } from "../pagination";
 import type { RequestOptions, Transport } from "../transport";
 import { EventsResource } from "../events";
 import {
-  AccountingResource,
   AffiliatesResource,
   AnalyticsResource,
   AssetsResource,
@@ -21,9 +20,6 @@ import {
   DisputesResource,
   DunningSettingsResource,
   EInvoicesResource,
-  ExpenseInboxResource,
-  ExpenseRulesResource,
-  ExpensesResource,
   InvoicesResource,
   MailMessagesResource,
   MailPreviewsResource,
@@ -49,7 +45,6 @@ import {
 import type {
   CreditLedgerPage,
   EInvoiceList,
-  ExpensePage,
   GetPriceChangeQuery,
   GetPriceChangeResponse,
   ListAffiliateCommissionsQuery,
@@ -76,7 +71,6 @@ import type {
   ListCustomersQuery,
   ListCustomersResponse,
   ListEInvoicesQuery,
-  ListExpensesQuery,
   ListInvoicesQuery,
   ListInvoicesResponse,
   ListMailMessagesQuery,
@@ -153,14 +147,6 @@ export class Paginators {
     return paginate(
       (q) => this.r.customers.listCreditLedger(externalId, q, options),
       (page) => page.entries,
-      query,
-    );
-  }
-
-  listExpenses(query?: ListExpensesQuery, options?: RequestOptions): AsyncGenerator<NonNullable<ExpensePage["expenses"]>[number], void, undefined> {
-    return paginate(
-      (q) => this.r.expenses.listExpenses(q, options),
-      (page) => page.expenses,
       query,
     );
   }
@@ -296,7 +282,6 @@ export class Paginators {
 
 /** The resource namespaces of the client; `Payrudder` extends it. */
 export abstract class PayrudderResources {
-  readonly accounting: AccountingResource;
   readonly affiliates: AffiliatesResource;
   readonly analytics: AnalyticsResource;
   readonly assets: AssetsResource;
@@ -315,9 +300,6 @@ export abstract class PayrudderResources {
   readonly dunningSettings: DunningSettingsResource;
   readonly eInvoices: EInvoicesResource;
   readonly events: EventsResource;
-  readonly expenseInbox: ExpenseInboxResource;
-  readonly expenseRules: ExpenseRulesResource;
-  readonly expenses: ExpensesResource;
   readonly invoices: InvoicesResource;
   readonly mailMessages: MailMessagesResource;
   readonly mailPreviews: MailPreviewsResource;
@@ -343,7 +325,6 @@ export abstract class PayrudderResources {
   readonly paginate: Paginators;
 
   constructor(t: Transport) {
-    this.accounting = new AccountingResource(t);
     this.affiliates = new AffiliatesResource(t);
     this.analytics = new AnalyticsResource(t);
     this.assets = new AssetsResource(t);
@@ -362,9 +343,6 @@ export abstract class PayrudderResources {
     this.dunningSettings = new DunningSettingsResource(t);
     this.eInvoices = new EInvoicesResource(t);
     this.events = new EventsResource(t);
-    this.expenseInbox = new ExpenseInboxResource(t);
-    this.expenseRules = new ExpenseRulesResource(t);
-    this.expenses = new ExpensesResource(t);
     this.invoices = new InvoicesResource(t);
     this.mailMessages = new MailMessagesResource(t);
     this.mailPreviews = new MailPreviewsResource(t);

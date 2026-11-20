@@ -28,6 +28,7 @@ final class CreatePaymentLinkRequest implements RequestBody
      * @param bool|null $singleUse
      * @param string|null $promotionCode
      * @param list<CreatePaymentLinkRequestRequiredContractsItem|string>|null $requiredContracts
+     * @param string|null $returnUrl
      * @param int|null $expiresInDays
      * @param string|null $idempotencyKey
      * @param list<LinkItem>|null $items
@@ -48,6 +49,7 @@ final class CreatePaymentLinkRequest implements RequestBody
         public readonly ?bool $singleUse = null,
         public readonly ?string $promotionCode = null,
         public readonly ?array $requiredContracts = null,
+        public readonly ?string $returnUrl = null,
         public readonly ?int $expiresInDays = null,
         public readonly ?string $idempotencyKey = null,
         public readonly ?array $items = null,
@@ -74,6 +76,7 @@ final class CreatePaymentLinkRequest implements RequestBody
             'single_use' => $this->singleUse,
             'promotion_code' => $this->promotionCode,
             'required_contracts' => Cast::wire($this->requiredContracts),
+            'return_url' => $this->returnUrl,
             'expires_in_days' => $this->expiresInDays,
             'idempotency_key' => $this->idempotencyKey,
             'items' => Cast::wire($this->items),

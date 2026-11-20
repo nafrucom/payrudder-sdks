@@ -1033,6 +1033,11 @@ class ChangeSubscriptionResponse(TypedDict):
     scheduled: bool
 
 
+class CreateSubscriptionCheckoutResponse(TypedDict):
+    url: str
+    expires_at: str
+
+
 class ApplyCouponRequest(TypedDict):
     code: str
 
@@ -1155,158 +1160,6 @@ class CreditLedgerEntry(TypedDict):
 class CreditLedgerPage(TypedDict):
     entries: list[CreditLedgerEntry]
     next_page_token: str
-
-
-ExpenseCategory = Literal["infrastructure", "payment_fees", "marketing", "payroll", "tax", "software", "other"]
-
-
-class Expense(TypedDict):
-    id: str
-    app_id: str
-    vendor: str
-    category: ExpenseCategory
-    amount_minor: int
-    currency: str
-    incurred_on: str
-    note: str
-    recurring: Literal["none", "monthly", "yearly"]
-    recurring_until: str
-    void_time: str | None
-    void_reason: str
-    create_time: str | None
-    update_time: str | None
-    tax_minor: int
-    attachment_asset_id: str
-
-
-class ExpensePage(TypedDict):
-    expenses: list[Expense]
-    next_page_token: str
-
-
-class _ExpenseInputRequired(TypedDict):
-    vendor: str
-    category: ExpenseCategory
-    amount_minor: int
-    currency: str
-    incurred_on: str | date
-
-
-class ExpenseInput(_ExpenseInputRequired, total=False):
-    note: str
-    app_id: str
-    recurring: Literal["none", "monthly", "yearly"]
-    recurring_until: str | date
-    tax_minor: int
-    attachment_asset_id: str
-
-
-class VoidExpenseRequest(TypedDict):
-    reason: str
-
-
-class ExpenseInbox(TypedDict):
-    token: str
-    app_id: str
-    address: str
-
-
-# InboxItem: a field is a Python keyword, so the functional form is used and every key is optional.
-InboxItem = TypedDict("InboxItem", {"id": "str", "app_id": "str", "from": "str", "subject": "str", "filename": "str", "content_type": "str", "size_bytes": "int", "status": "Literal['to_review', 'accepted', 'dismissed']", "expense_id": "str", "receive_time": "str | None"}, total=False)
-
-
-class InboxItemPage(TypedDict):
-    items: list[InboxItem]
-
-
-class _ResolveInboxItemRequestRequired(TypedDict):
-    status: Literal["accepted", "dismissed"]
-
-
-class ResolveInboxItemRequest(_ResolveInboxItemRequestRequired, total=False):
-    expense_id: str
-
-
-class ExpenseRule(TypedDict):
-    id: str
-    vendor_match: str
-    category: ExpenseCategory
-    currency: str
-    tax_bps: int
-    expected_amount_minor: int
-    tolerance_bps: int
-    auto_approve: bool
-    app_id: str
-
-
-class ListExpenseRulesResponse(TypedDict):
-    rules: list[ExpenseRule]
-
-
-class _ExpenseRuleInputRequired(TypedDict):
-    vendor_match: str
-    category: ExpenseCategory
-    currency: str
-
-
-class ExpenseRuleInput(_ExpenseRuleInputRequired, total=False):
-    id: str
-    tax_bps: int
-    expected_amount_minor: int
-    tolerance_bps: int
-    auto_approve: bool
-    app_id: str
-
-
-class AccountingCurrencyExpenseByCategoryItem(TypedDict):
-    category: ExpenseCategory
-    amount_minor: int
-
-
-class AccountingPoint(TypedDict):
-    bucket: str
-    gross_income_minor: int
-    tax_minor: int
-    refunds_minor: int
-    net_income_minor: int
-    expenses_minor: int
-    profit_minor: int
-    discounts_minor: int
-
-
-class AccountingCoupon(TypedDict):
-    coupon_code: str
-    invoices: int
-    gross_minor: int
-    discount_minor: int
-    net_minor: int
-
-
-class AccountingCurrency(TypedDict):
-    """One currency of the period. Every amount is int64 minor units as a string."""
-    currency: str
-    gross_income_minor: int
-    tax_minor: int
-    refunds_minor: int
-    net_income_minor: int
-    expenses_minor: int
-    provider_fees_minor: int
-    provider_fees_recorded: bool
-    profit_minor: int
-    paid_invoices: int
-    expense_by_category: list[AccountingCurrencyExpenseByCategoryItem]
-    series: list[AccountingPoint]
-    discounts_minor: int
-    sales_minor: int
-    coupons: list[AccountingCoupon]
-
-
-class AccountingSummary(TypedDict):
-    from_date: str
-    to_date: str
-    granularity: Literal["day", "month"]
-    app_id: str
-    currencies: list[AccountingCurrency]
 
 
 class CreditSettings(TypedDict):
@@ -2067,6 +1920,7 @@ class _PaymentLinkRequired(TypedDict):
     credits: int
     promotion_code: str
     required_contracts: list[Literal["distance_sales", "pre_info", "tos", "privacy"]]
+    return_url: str
     invoice_id: str
     customer_external_id: str
     single_use: bool
@@ -2106,6 +1960,7 @@ class CreatePaymentLinkRequest(TypedDict, total=False):
     single_use: bool
     promotion_code: str
     required_contracts: list[Literal["distance_sales", "pre_info", "tos", "privacy"]]
+    return_url: str
     expires_in_days: int
     idempotency_key: str
     items: list[LinkItem]
@@ -2124,6 +1979,7 @@ class _CreatedPaymentLinkRequired(TypedDict):
     credits: int
     promotion_code: str
     required_contracts: list[Literal["distance_sales", "pre_info", "tos", "privacy"]]
+    return_url: str
     invoice_id: str
     customer_external_id: str
     single_use: bool

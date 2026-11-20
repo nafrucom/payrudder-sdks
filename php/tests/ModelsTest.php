@@ -108,6 +108,6 @@ final class ModelsTest extends TestCase
     {
         $this->transport->push(new HttpResponse(200, ['content-type' => 'text/csv'], "a,b\n1,2\n"));
 
-        self::assertSame("a,b\n1,2\n", $this->client()->accounting->exportAccountingCsv(from: '2026-01-01', to: '2026-02-01'));
+        self::assertSame("a,b\n1,2\n", $this->client()->affiliates->exportAffiliateJournal(currency: 'USD'));
     }
 }

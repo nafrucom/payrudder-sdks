@@ -505,7 +505,7 @@ func TestRawBodyDownload(t *testing.T) {
 		w.Header().Set("Content-Type", "text/csv")
 		_, _ = w.Write([]byte("a,b\n1,2\n"))
 	}))
-	b, err := c.Accounting.ExportAccountingCsv(context.Background(), &ExportAccountingCsvParams{From: "2026-01-01"})
+	b, err := c.Affiliates.ExportAffiliateJournal(context.Background(), &ExportAffiliateJournalParams{Currency: "USD"})
 	if err != nil || string(b) != "a,b\n1,2\n" || accept != "*/*" {
 		t.Fatalf("%q %v accept %q", b, err, accept)
 	}

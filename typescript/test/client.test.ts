@@ -91,7 +91,7 @@ describe("requests", () => {
 
   it("returns undefined for 204 and text for CSV", async () => {
     server = await startServer((req, res) => {
-      if (req.url.startsWith("/v1/expense-rules")) {
+      if (req.url.startsWith("/v1/webhook-endpoints")) {
         res.writeHead(204);
         res.end();
       } else {
@@ -100,17 +100,8 @@ describe("requests", () => {
       }
     });
     const { client } = clientFor(server);
-    expect(await client.expenseRules.deleteExpenseRule("0192")).toBeUndefined();
-    expect(await client.accounting.exportAccountingCsv({ from: "2026-01-01", to: "2026-02-01" })).toBe("a,b\n1,2\n");
-  });
-
-  it("returns bytes for binary downloads", async () => {
-    server = await startServer((_req, res) => {
-      res.writeHead(200, { "Content-Type": "application/octet-stream" });
-      res.end(Buffer.from([1, 2, 3]));
-    });
-    const { client } = clientFor(server);
-    expect(await client.expenseInbox.getInboxItemFile("0192")).toEqual(new Uint8Array([1, 2, 3]));
+    expect(await client.webhookEndpoints.deleteWebhookEndpoint("0192")).toBeUndefined();
+    expect(await client.affiliates.exportAffiliateJournal({ currency: "USD" })).toBe("a,b\n1,2\n");
   });
 
   it("uploads multipart bodies without forcing a content type", async () => {

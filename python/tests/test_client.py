@@ -75,8 +75,8 @@ def test_path_parameters_are_escaped_and_must_not_be_empty(client: Payrudder, ga
 
 
 def test_python_keyword_query_parameter_is_sent_under_its_wire_name(client: Payrudder, gateway: FakeGateway) -> None:
-    gateway.script = [ok({"currencies": []})]
-    client.accounting.get_accounting_summary(from_=date(2026, 1, 1), to="2026-01-31")
+    gateway.script = [ok({})]
+    client.affiliates.get_affiliate_funnel(from_=date(2026, 1, 1), to="2026-01-31")
     assert gateway.requests[0].query["from"] == "2026-01-01"
     assert gateway.requests[0].query["to"] == "2026-01-31"
 
@@ -133,10 +133,8 @@ def test_no_content_text_and_bytes_responses(client: Payrudder, gateway: FakeGat
     gateway.script = [ok(status=204)]
     assert client.coupons.deactivate_coupon("X") is None
     gateway.script = [ok("a,b\n1,2\n")]
-    assert client.accounting.export_accounting_csv(from_="2026-01-01", to="2026-01-31") == "a,b\n1,2\n"
+    assert client.affiliates.export_affiliate_journal(currency="USD") == "a,b\n1,2\n"
     assert gateway.requests[-1].headers["accept"] == "*/*"
-    gateway.script = [ok(b"%PDF-1.7")]
-    assert client.expense_inbox.get_inbox_item_file("0192") == b"%PDF-1.7"
 
 
 def test_multipart_upload(client: Payrudder, gateway: FakeGateway) -> None:

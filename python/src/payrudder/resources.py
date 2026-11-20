@@ -726,6 +726,13 @@ class SubscriptionsResource:
         """
         return cast("m.ChangeSubscriptionResponse", self._client._request("POST", f"/v1/subscriptions/{_p(id)}/change", body=body, response_wire='ChangeSubscriptionResponse', options=options))
 
+    def create_subscription_checkout(self, id: str, *, options: RequestOptions | None = None) -> m.CreateSubscriptionCheckoutResponse:
+        """The page where the customer starts a subscription a payment provider renews (Paddle).
+
+        ``POST /v1/subscriptions/{id}/checkout``
+        """
+        return cast("m.CreateSubscriptionCheckoutResponse", self._client._request("POST", f"/v1/subscriptions/{_p(id)}/checkout", options=options))
+
     def apply_coupon(self, id: str, body: m.ApplyCouponRequest, *, options: RequestOptions | None = None) -> m.Subscription:
         """Redeem a coupon on a subscription that has none.
 
@@ -868,156 +875,6 @@ class CreditPacksResource:
         ``POST /v1/credit-packs/{id}/deactivate``
         """
         return cast("m.EmptyObject", self._client._request("POST", f"/v1/credit-packs/{_p(id)}/deactivate", options=options))
-
-
-class ExpensesResource:
-    """``/v1/expenses`` and related operations."""
-
-    def __init__(self, client: Payrudder) -> None:
-        self._client = client
-
-    def list_expenses(self, *, category: Literal["infrastructure", "payment_fees", "marketing", "payroll", "tax", "software", "other"] | None = None, app_id: str | None = None, currency: str | None = None, from_: str | date | None = None, to: str | date | None = None, include_voided: bool | None = None, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.ExpensePage:
-        """The expenses the tenant recorded, newest first.
-
-        ``GET /v1/expenses``
-        """
-        return cast("m.ExpensePage", self._client._request("GET", "/v1/expenses", query={"category": category, "app_id": app_id, "currency": currency, "from": from_, "to": to, "include_voided": include_voided, "page_size": page_size, "page_token": page_token}, response_wire='ExpensePage', options=options))
-
-    def iter_expenses(self, *, category: Literal["infrastructure", "payment_fees", "marketing", "payroll", "tax", "software", "other"] | None = None, app_id: str | None = None, currency: str | None = None, from_: str | date | None = None, to: str | date | None = None, include_voided: bool | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> Iterator[m.Expense]:
-        """Every item of ``list_expenses``, following ``next_page_token`` until the last page."""
-        token: str | None = None
-        while True:
-            page = self.list_expenses(category=category, app_id=app_id, currency=currency, from_=from_, to=to, include_voided=include_voided, page_size=page_size, options=options, page_token=token)
-            yield from page.get("expenses", [])
-            token = page.get("next_page_token") or None
-            if token is None:
-                return
-
-    def create_expense(self, body: m.ExpenseInput, *, options: RequestOptions | None = None) -> m.Expense:
-        """Record an expense.
-
-        ``POST /v1/expenses``
-        """
-        return cast("m.Expense", self._client._request("POST", "/v1/expenses", body=body, body_wire='ExpenseInput', response_wire='Expense', options=options))
-
-    def update_expense(self, id: str, body: m.ExpenseInput, *, options: RequestOptions | None = None) -> m.Expense:
-        """Replace an expense.
-
-        ``PUT /v1/expenses/{id}``
-        """
-        return cast("m.Expense", self._client._request("PUT", f"/v1/expenses/{_p(id)}", body=body, body_wire='ExpenseInput', response_wire='Expense', options=options))
-
-    def void_expense(self, id: str, body: m.VoidExpenseRequest | None = None, *, reason: str | None = None, options: RequestOptions | None = None) -> m.Expense:
-        """Void an expense.
-
-        ``DELETE /v1/expenses/{id}``
-        """
-        return cast("m.Expense", self._client._request("DELETE", f"/v1/expenses/{_p(id)}", query={"reason": reason}, body=body, response_wire='Expense', options=options))
-
-
-class ExpenseInboxResource:
-    """``/v1/expense-inbox`` and related operations."""
-
-    def __init__(self, client: Payrudder) -> None:
-        self._client = client
-
-    def get_expense_inbox(self, *, app_id: str | None = None, options: RequestOptions | None = None) -> m.ExpenseInbox:
-        """The tenant's invoice inbox address.
-
-        ``GET /v1/expense-inbox``
-        """
-        return cast("m.ExpenseInbox", self._client._request("GET", "/v1/expense-inbox", query={"app_id": app_id}, options=options))
-
-    def rotate_expense_inbox(self, *, app_id: str | None = None, options: RequestOptions | None = None) -> m.ExpenseInbox:
-        """Give the invoice inbox a new address.
-
-        ``POST /v1/expense-inbox/rotate``
-        """
-        return cast("m.ExpenseInbox", self._client._request("POST", "/v1/expense-inbox/rotate", query={"app_id": app_id}, options=options))
-
-    def list_inbox_items(self, *, status: Literal["to_review", "accepted", "dismissed"] | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> m.InboxItemPage:
-        """The attachments received by mail, newest first.
-
-        ``GET /v1/expense-inbox/items``
-        """
-        return cast("m.InboxItemPage", self._client._request("GET", "/v1/expense-inbox/items", query={"status": status, "page_size": page_size}, response_wire='InboxItemPage', options=options))
-
-    def get_inbox_item_file(self, id: str, *, options: RequestOptions | None = None) -> bytes:
-        """The bytes of a received attachment.
-
-        ``GET /v1/expense-inbox/items/{id}/file``
-        """
-        return cast("bytes", self._client._request("GET", f"/v1/expense-inbox/items/{_p(id)}/file", returns="bytes", options=options))
-
-    def resolve_inbox_item(self, id: str, body: m.ResolveInboxItemRequest, *, options: RequestOptions | None = None) -> m.InboxItem:
-        """Mark a received attachment accepted or dismissed.
-
-        ``POST /v1/expense-inbox/items/{id}/resolve``
-        """
-        return cast("m.InboxItem", self._client._request("POST", f"/v1/expense-inbox/items/{_p(id)}/resolve", body=body, response_wire='InboxItem', options=options))
-
-
-class ExpenseRulesResource:
-    """``/v1/expense-rules`` and related operations."""
-
-    def __init__(self, client: Payrudder) -> None:
-        self._client = client
-
-    def list_expense_rules(self, *, options: RequestOptions | None = None) -> m.ListExpenseRulesResponse:
-        """The recurring-vendor rules.
-
-        ``GET /v1/expense-rules``
-        """
-        return cast("m.ListExpenseRulesResponse", self._client._request("GET", "/v1/expense-rules", response_wire='ListExpenseRulesResponse', options=options))
-
-    def create_expense_rule(self, body: m.ExpenseRuleInput, *, options: RequestOptions | None = None) -> m.ExpenseRule:
-        """Add a recurring-vendor rule.
-
-        ``POST /v1/expense-rules``
-        """
-        return cast("m.ExpenseRule", self._client._request("POST", "/v1/expense-rules", body=body, body_wire='ExpenseRuleInput', response_wire='ExpenseRule', options=options))
-
-    def update_expense_rule(self, id: str, body: m.ExpenseRuleInput, *, options: RequestOptions | None = None) -> m.ExpenseRule:
-        """Replace a recurring-vendor rule.
-
-        ``PUT /v1/expense-rules/{id}``
-        """
-        return cast("m.ExpenseRule", self._client._request("PUT", f"/v1/expense-rules/{_p(id)}", body=body, body_wire='ExpenseRuleInput', response_wire='ExpenseRule', options=options))
-
-    def delete_expense_rule(self, id: str, *, options: RequestOptions | None = None) -> None:
-        """Delete a recurring-vendor rule.
-
-        ``DELETE /v1/expense-rules/{id}``
-        """
-        self._client._request("DELETE", f"/v1/expense-rules/{_p(id)}", returns="none", options=options)
-
-
-class AccountingResource:
-    """``/v1/accounting`` and related operations."""
-
-    def __init__(self, client: Payrudder) -> None:
-        self._client = client
-
-    def get_accounting_summary(self, *, from_: str | date, to: str | date, app_id: str | None = None, granularity: Literal["day", "month"] | None = None, options: RequestOptions | None = None) -> m.AccountingSummary:
-        """Income and expenses of a period, one block per currency.
-
-        ``GET /v1/accounting/summary``
-        """
-        return cast("m.AccountingSummary", self._client._request("GET", "/v1/accounting/summary", query={"from": from_, "to": to, "app_id": app_id, "granularity": granularity}, response_wire='AccountingSummary', options=options))
-
-    def export_accounting_csv(self, *, from_: str | date, to: str | date, app_id: str | None = None, granularity: Literal["day", "month"] | None = None, options: RequestOptions | None = None) -> str:
-        """The accounting series as CSV.
-
-        ``GET /v1/accounting/export.csv``
-        """
-        return cast("str", self._client._request("GET", "/v1/accounting/export.csv", query={"from": from_, "to": to, "app_id": app_id, "granularity": granularity}, returns="text", options=options))
-
-    def export_accounting_coupons_csv(self, *, from_: str | date, to: str | date, app_id: str | None = None, granularity: Literal["day", "month"] | None = None, options: RequestOptions | None = None) -> str:
-        """Gross sales, discounts and net per coupon as CSV.
-
-        ``GET /v1/accounting/coupons.csv``
-        """
-        return cast("str", self._client._request("GET", "/v1/accounting/coupons.csv", query={"from": from_, "to": to, "app_id": app_id, "granularity": granularity}, returns="text", options=options))
 
 
 class CreditsResource:
@@ -2003,10 +1860,6 @@ class Resources:
     tax_rates: TaxRatesResource
     dunning_settings: DunningSettingsResource
     credit_packs: CreditPacksResource
-    expenses: ExpensesResource
-    expense_inbox: ExpenseInboxResource
-    expense_rules: ExpenseRulesResource
-    accounting: AccountingResource
     credits: CreditsResource
     webhook_endpoints: WebhookEndpointsResource
     webhook_deliveries: WebhookDeliveriesResource
@@ -2048,10 +1901,6 @@ class Resources:
         self.tax_rates = TaxRatesResource(client)
         self.dunning_settings = DunningSettingsResource(client)
         self.credit_packs = CreditPacksResource(client)
-        self.expenses = ExpensesResource(client)
-        self.expense_inbox = ExpenseInboxResource(client)
-        self.expense_rules = ExpenseRulesResource(client)
-        self.accounting = AccountingResource(client)
         self.credits = CreditsResource(client)
         self.webhook_endpoints = WebhookEndpointsResource(client)
         self.webhook_deliveries = WebhookDeliveriesResource(client)
@@ -2791,6 +2640,13 @@ class AsyncSubscriptionsResource:
         """
         return cast("m.ChangeSubscriptionResponse", await self._client._request("POST", f"/v1/subscriptions/{_p(id)}/change", body=body, response_wire='ChangeSubscriptionResponse', options=options))
 
+    async def create_subscription_checkout(self, id: str, *, options: RequestOptions | None = None) -> m.CreateSubscriptionCheckoutResponse:
+        """The page where the customer starts a subscription a payment provider renews (Paddle).
+
+        ``POST /v1/subscriptions/{id}/checkout``
+        """
+        return cast("m.CreateSubscriptionCheckoutResponse", await self._client._request("POST", f"/v1/subscriptions/{_p(id)}/checkout", options=options))
+
     async def apply_coupon(self, id: str, body: m.ApplyCouponRequest, *, options: RequestOptions | None = None) -> m.Subscription:
         """Redeem a coupon on a subscription that has none.
 
@@ -2934,157 +2790,6 @@ class AsyncCreditPacksResource:
         ``POST /v1/credit-packs/{id}/deactivate``
         """
         return cast("m.EmptyObject", await self._client._request("POST", f"/v1/credit-packs/{_p(id)}/deactivate", options=options))
-
-
-class AsyncExpensesResource:
-    """``/v1/expenses`` and related operations."""
-
-    def __init__(self, client: AsyncPayrudder) -> None:
-        self._client = client
-
-    async def list_expenses(self, *, category: Literal["infrastructure", "payment_fees", "marketing", "payroll", "tax", "software", "other"] | None = None, app_id: str | None = None, currency: str | None = None, from_: str | date | None = None, to: str | date | None = None, include_voided: bool | None = None, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.ExpensePage:
-        """The expenses the tenant recorded, newest first.
-
-        ``GET /v1/expenses``
-        """
-        return cast("m.ExpensePage", await self._client._request("GET", "/v1/expenses", query={"category": category, "app_id": app_id, "currency": currency, "from": from_, "to": to, "include_voided": include_voided, "page_size": page_size, "page_token": page_token}, response_wire='ExpensePage', options=options))
-
-    async def iter_expenses(self, *, category: Literal["infrastructure", "payment_fees", "marketing", "payroll", "tax", "software", "other"] | None = None, app_id: str | None = None, currency: str | None = None, from_: str | date | None = None, to: str | date | None = None, include_voided: bool | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.Expense]:
-        """Every item of ``list_expenses``, following ``next_page_token`` until the last page."""
-        token: str | None = None
-        while True:
-            page = await self.list_expenses(category=category, app_id=app_id, currency=currency, from_=from_, to=to, include_voided=include_voided, page_size=page_size, options=options, page_token=token)
-            for item in page.get("expenses", []):
-                yield item
-            token = page.get("next_page_token") or None
-            if token is None:
-                return
-
-    async def create_expense(self, body: m.ExpenseInput, *, options: RequestOptions | None = None) -> m.Expense:
-        """Record an expense.
-
-        ``POST /v1/expenses``
-        """
-        return cast("m.Expense", await self._client._request("POST", "/v1/expenses", body=body, body_wire='ExpenseInput', response_wire='Expense', options=options))
-
-    async def update_expense(self, id: str, body: m.ExpenseInput, *, options: RequestOptions | None = None) -> m.Expense:
-        """Replace an expense.
-
-        ``PUT /v1/expenses/{id}``
-        """
-        return cast("m.Expense", await self._client._request("PUT", f"/v1/expenses/{_p(id)}", body=body, body_wire='ExpenseInput', response_wire='Expense', options=options))
-
-    async def void_expense(self, id: str, body: m.VoidExpenseRequest | None = None, *, reason: str | None = None, options: RequestOptions | None = None) -> m.Expense:
-        """Void an expense.
-
-        ``DELETE /v1/expenses/{id}``
-        """
-        return cast("m.Expense", await self._client._request("DELETE", f"/v1/expenses/{_p(id)}", query={"reason": reason}, body=body, response_wire='Expense', options=options))
-
-
-class AsyncExpenseInboxResource:
-    """``/v1/expense-inbox`` and related operations."""
-
-    def __init__(self, client: AsyncPayrudder) -> None:
-        self._client = client
-
-    async def get_expense_inbox(self, *, app_id: str | None = None, options: RequestOptions | None = None) -> m.ExpenseInbox:
-        """The tenant's invoice inbox address.
-
-        ``GET /v1/expense-inbox``
-        """
-        return cast("m.ExpenseInbox", await self._client._request("GET", "/v1/expense-inbox", query={"app_id": app_id}, options=options))
-
-    async def rotate_expense_inbox(self, *, app_id: str | None = None, options: RequestOptions | None = None) -> m.ExpenseInbox:
-        """Give the invoice inbox a new address.
-
-        ``POST /v1/expense-inbox/rotate``
-        """
-        return cast("m.ExpenseInbox", await self._client._request("POST", "/v1/expense-inbox/rotate", query={"app_id": app_id}, options=options))
-
-    async def list_inbox_items(self, *, status: Literal["to_review", "accepted", "dismissed"] | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> m.InboxItemPage:
-        """The attachments received by mail, newest first.
-
-        ``GET /v1/expense-inbox/items``
-        """
-        return cast("m.InboxItemPage", await self._client._request("GET", "/v1/expense-inbox/items", query={"status": status, "page_size": page_size}, response_wire='InboxItemPage', options=options))
-
-    async def get_inbox_item_file(self, id: str, *, options: RequestOptions | None = None) -> bytes:
-        """The bytes of a received attachment.
-
-        ``GET /v1/expense-inbox/items/{id}/file``
-        """
-        return cast("bytes", await self._client._request("GET", f"/v1/expense-inbox/items/{_p(id)}/file", returns="bytes", options=options))
-
-    async def resolve_inbox_item(self, id: str, body: m.ResolveInboxItemRequest, *, options: RequestOptions | None = None) -> m.InboxItem:
-        """Mark a received attachment accepted or dismissed.
-
-        ``POST /v1/expense-inbox/items/{id}/resolve``
-        """
-        return cast("m.InboxItem", await self._client._request("POST", f"/v1/expense-inbox/items/{_p(id)}/resolve", body=body, response_wire='InboxItem', options=options))
-
-
-class AsyncExpenseRulesResource:
-    """``/v1/expense-rules`` and related operations."""
-
-    def __init__(self, client: AsyncPayrudder) -> None:
-        self._client = client
-
-    async def list_expense_rules(self, *, options: RequestOptions | None = None) -> m.ListExpenseRulesResponse:
-        """The recurring-vendor rules.
-
-        ``GET /v1/expense-rules``
-        """
-        return cast("m.ListExpenseRulesResponse", await self._client._request("GET", "/v1/expense-rules", response_wire='ListExpenseRulesResponse', options=options))
-
-    async def create_expense_rule(self, body: m.ExpenseRuleInput, *, options: RequestOptions | None = None) -> m.ExpenseRule:
-        """Add a recurring-vendor rule.
-
-        ``POST /v1/expense-rules``
-        """
-        return cast("m.ExpenseRule", await self._client._request("POST", "/v1/expense-rules", body=body, body_wire='ExpenseRuleInput', response_wire='ExpenseRule', options=options))
-
-    async def update_expense_rule(self, id: str, body: m.ExpenseRuleInput, *, options: RequestOptions | None = None) -> m.ExpenseRule:
-        """Replace a recurring-vendor rule.
-
-        ``PUT /v1/expense-rules/{id}``
-        """
-        return cast("m.ExpenseRule", await self._client._request("PUT", f"/v1/expense-rules/{_p(id)}", body=body, body_wire='ExpenseRuleInput', response_wire='ExpenseRule', options=options))
-
-    async def delete_expense_rule(self, id: str, *, options: RequestOptions | None = None) -> None:
-        """Delete a recurring-vendor rule.
-
-        ``DELETE /v1/expense-rules/{id}``
-        """
-        await self._client._request("DELETE", f"/v1/expense-rules/{_p(id)}", returns="none", options=options)
-
-
-class AsyncAccountingResource:
-    """``/v1/accounting`` and related operations."""
-
-    def __init__(self, client: AsyncPayrudder) -> None:
-        self._client = client
-
-    async def get_accounting_summary(self, *, from_: str | date, to: str | date, app_id: str | None = None, granularity: Literal["day", "month"] | None = None, options: RequestOptions | None = None) -> m.AccountingSummary:
-        """Income and expenses of a period, one block per currency.
-
-        ``GET /v1/accounting/summary``
-        """
-        return cast("m.AccountingSummary", await self._client._request("GET", "/v1/accounting/summary", query={"from": from_, "to": to, "app_id": app_id, "granularity": granularity}, response_wire='AccountingSummary', options=options))
-
-    async def export_accounting_csv(self, *, from_: str | date, to: str | date, app_id: str | None = None, granularity: Literal["day", "month"] | None = None, options: RequestOptions | None = None) -> str:
-        """The accounting series as CSV.
-
-        ``GET /v1/accounting/export.csv``
-        """
-        return cast("str", await self._client._request("GET", "/v1/accounting/export.csv", query={"from": from_, "to": to, "app_id": app_id, "granularity": granularity}, returns="text", options=options))
-
-    async def export_accounting_coupons_csv(self, *, from_: str | date, to: str | date, app_id: str | None = None, granularity: Literal["day", "month"] | None = None, options: RequestOptions | None = None) -> str:
-        """Gross sales, discounts and net per coupon as CSV.
-
-        ``GET /v1/accounting/coupons.csv``
-        """
-        return cast("str", await self._client._request("GET", "/v1/accounting/coupons.csv", query={"from": from_, "to": to, "app_id": app_id, "granularity": granularity}, returns="text", options=options))
 
 
 class AsyncCreditsResource:
@@ -4086,10 +3791,6 @@ class AsyncResources:
     tax_rates: AsyncTaxRatesResource
     dunning_settings: AsyncDunningSettingsResource
     credit_packs: AsyncCreditPacksResource
-    expenses: AsyncExpensesResource
-    expense_inbox: AsyncExpenseInboxResource
-    expense_rules: AsyncExpenseRulesResource
-    accounting: AsyncAccountingResource
     credits: AsyncCreditsResource
     webhook_endpoints: AsyncWebhookEndpointsResource
     webhook_deliveries: AsyncWebhookDeliveriesResource
@@ -4131,10 +3832,6 @@ class AsyncResources:
         self.tax_rates = AsyncTaxRatesResource(client)
         self.dunning_settings = AsyncDunningSettingsResource(client)
         self.credit_packs = AsyncCreditPacksResource(client)
-        self.expenses = AsyncExpensesResource(client)
-        self.expense_inbox = AsyncExpenseInboxResource(client)
-        self.expense_rules = AsyncExpenseRulesResource(client)
-        self.accounting = AsyncAccountingResource(client)
         self.credits = AsyncCreditsResource(client)
         self.webhook_endpoints = AsyncWebhookEndpointsResource(client)
         self.webhook_deliveries = AsyncWebhookDeliveriesResource(client)

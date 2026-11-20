@@ -16,81 +16,6 @@ var (
 	_ = url.PathEscape
 )
 
-// AccountingCoupon is an object of the API; see components.schemas.AccountingCoupon in api/openapi/v1.yaml.
-type AccountingCoupon struct {
-	CouponCode string `json:"coupon_code"`
-	Invoices   string `json:"invoices"`
-	// What those invoices came to before the coupon: positive lines, tax excluded
-	GrossMinor    Int64 `json:"gross_minor"`
-	DiscountMinor Int64 `json:"discount_minor"`
-	// gross - discount
-	NetMinor Int64 `json:"net_minor"`
-}
-
-// AccountingCurrency: One currency of the period. Every amount is int64 minor units as a string.
-type AccountingCurrency struct {
-	Currency string `json:"currency"`
-	// Invoices paid in the period, tax included
-	GrossIncomeMinor Int64 `json:"gross_income_minor"`
-	// The tax lines of those invoices, less the tax that credit notes issued in the period gave back (it is
-	// negative in a period that gave back more than it collected)
-	TaxMinor Int64 `json:"tax_minor"`
-	// Credit notes against paid invoices plus invoices refunded in full
-	RefundsMinor Int64 `json:"refunds_minor"`
-	// gross - tax - refunds
-	NetIncomeMinor Int64 `json:"net_income_minor"`
-	// Every live occurrence in the period, provider fees included
-	ExpensesMinor Int64 `json:"expenses_minor"`
-	// The payment_fees expenses; meaningful only when provider_fees_recorded
-	ProviderFeesMinor Int64 `json:"provider_fees_minor"`
-	// False: no commission was entered, which is not the same as zero
-	ProviderFeesRecorded bool `json:"provider_fees_recorded"`
-	// net income - expenses; negative for a loss
-	ProfitMinor       Int64                                 `json:"profit_minor"`
-	PaidInvoices      string                                `json:"paid_invoices"`
-	ExpenseByCategory []AccountingCurrencyExpenseByCategory `json:"expense_by_category"`
-	Series            []AccountingPoint                     `json:"series"`
-	// What coupons took off the paid invoices (contra-revenue, a positive number). gross_income_minor is already
-	// after it
-	DiscountsMinor Int64 `json:"discounts_minor"`
-	// Revenue before discounts: gross - tax + discounts
-	SalesMinor Int64 `json:"sales_minor"`
-	// Gross, discounts and net per coupon, most discount first
-	Coupons []AccountingCoupon `json:"coupons"`
-}
-
-// AccountingCurrencyExpenseByCategory is an object of the API; see
-// components.schemas.AccountingCurrencyExpenseByCategory in api/openapi/v1.yaml.
-type AccountingCurrencyExpenseByCategory struct {
-	Category    string `json:"category"`
-	AmountMinor Int64  `json:"amount_minor"`
-}
-
-// AccountingPoint is an object of the API; see components.schemas.AccountingPoint in api/openapi/v1.yaml.
-type AccountingPoint struct {
-	// The day, or the first day of the month
-	Bucket           string `json:"bucket"`
-	GrossIncomeMinor Int64  `json:"gross_income_minor"`
-	TaxMinor         Int64  `json:"tax_minor"`
-	RefundsMinor     Int64  `json:"refunds_minor"`
-	NetIncomeMinor   Int64  `json:"net_income_minor"`
-	ExpensesMinor    Int64  `json:"expenses_minor"`
-	ProfitMinor      Int64  `json:"profit_minor"`
-	// What coupons took off the invoices paid in this bucket
-	DiscountsMinor Int64 `json:"discounts_minor"`
-}
-
-// AccountingSummary is an object of the API; see components.schemas.AccountingSummary in api/openapi/v1.yaml.
-type AccountingSummary struct {
-	FromDate string `json:"from_date"`
-	ToDate   string `json:"to_date"`
-	// One of: day, month.
-	Granularity string `json:"granularity"`
-	AppID       string `json:"app_id"`
-	// Ordered by currency code; a currency with no income and no expenses has no block
-	Currencies []AccountingCurrency `json:"currencies"`
-}
-
 // AddBlocklistEntryRequest is the request body of AddBlocklistEntry.
 type AddBlocklistEntryRequest struct {
 	// One of: email, tax_id, external_id.
@@ -910,6 +835,10 @@ type CreatePaymentLinkRequest struct {
 	// list to the invoice link the payer continues on. 400 billing.payment_link.bad_required_contracts for an
 	// unknown kind or one named twice
 	RequiredContracts []string `json:"required_contracts,omitempty"`
+	// Optional: the "return to app" address the link's page offers its payer, instead of the app's setting (PATCH
+	// /app/v1/apps/{id}). https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the
+	// invoice link the payer continues on. 400 billing.payment_link.bad_return_url otherwise
+	ReturnURL string `json:"return_url,omitempty"`
 	// Default 30 for adhoc, 90 for invoice
 	ExpiresInDays  *int   `json:"expires_in_days,omitempty"`
 	IdempotencyKey string `json:"idempotency_key,omitempty"`
@@ -972,6 +901,13 @@ type CreatePromotionCodes struct {
 // CreatePromotionCodesResponse is the response of CreatePromotionCodes.
 type CreatePromotionCodesResponse struct {
 	Codes []PromotionCode `json:"codes"`
+}
+
+// CreateSubscriptionCheckoutResponse is the response of CreateSubscriptionCheckout.
+type CreateSubscriptionCheckoutResponse struct {
+	// The page to send the customer to
+	URL       string    `json:"url"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 // CreateSubscriptionRequest is the request body of CreateSubscription.
@@ -1046,6 +982,8 @@ type CreatedPaymentLink struct {
 	// The agreements the payer accepts on this link's page instead of the seller's tenant-wide setting (GET
 	// /v1/contracts/settings); empty: the setting applies
 	RequiredContracts []string `json:"required_contracts"`
+	// The "return to app" address this link's page offers instead of the app's setting; empty: the app's
+	ReturnURL string `json:"return_url"`
 	// kind invoice: the invoice; empty for an ad-hoc link (its invoices are made on use)
 	InvoiceID          string `json:"invoice_id"`
 	CustomerExternalID string `json:"customer_external_id"`
@@ -1616,97 +1554,6 @@ type EventResult struct {
 	ErrorMessage string `json:"error_message,omitempty"`
 }
 
-// Expense is an object of the API; see components.schemas.Expense in api/openapi/v1.yaml.
-type Expense struct {
-	ID          string `json:"id"`
-	AppID       string `json:"app_id"`
-	Vendor      string `json:"vendor"`
-	Category    string `json:"category"`
-	AmountMinor Int64  `json:"amount_minor"`
-	Currency    string `json:"currency"`
-	IncurredOn  string `json:"incurred_on"`
-	Note        string `json:"note"`
-	// One of: none, monthly, yearly.
-	Recurring         string     `json:"recurring"`
-	RecurringUntil    string     `json:"recurring_until"`
-	VoidTime          *time.Time `json:"void_time"`
-	VoidReason        string     `json:"void_reason"`
-	CreateTime        *time.Time `json:"create_time"`
-	UpdateTime        *time.Time `json:"update_time"`
-	TaxMinor          Int64      `json:"tax_minor"`
-	AttachmentAssetID string     `json:"attachment_asset_id"`
-}
-
-// ExpenseInbox is an object of the API; see components.schemas.ExpenseInbox in api/openapi/v1.yaml.
-type ExpenseInbox struct {
-	Token string `json:"token"`
-	AppID string `json:"app_id"`
-	// invoices+<token>@<inbound domain>; empty when no inbound domain is configured
-	Address string `json:"address"`
-}
-
-// ExpenseInput is an object of the API; see components.schemas.ExpenseInput in api/openapi/v1.yaml.
-type ExpenseInput struct {
-	Vendor   string `json:"vendor"`
-	Category string `json:"category"`
-	// int64 minor units, above zero (a number is accepted too)
-	AmountMinor Int64  `json:"amount_minor"`
-	Currency    string `json:"currency"`
-	// The day, or the first day of a recurring expense (UTC)
-	IncurredOn string `json:"incurred_on"`
-	Note       string `json:"note,omitempty"`
-	// The app of the account the cost belongs to; leave out for the whole tenant
-	AppID string `json:"app_id,omitempty"`
-	// One of: none, monthly, yearly.
-	Recurring string `json:"recurring,omitempty"`
-	// Last day an occurrence may fall on; leave out for no end. Only for a recurring expense.
-	RecurringUntil string `json:"recurring_until,omitempty"`
-	// The tax inside amount_minor, when the receipt shows it (informational; no summary reads it)
-	TaxMinor *Int64 `json:"tax_minor,omitempty"`
-	// The receipt or invoice kept with the expense: a READY general asset of the tenant
-	AttachmentAssetID string `json:"attachment_asset_id,omitempty"`
-}
-
-// ExpensePage is an object of the API; see components.schemas.ExpensePage in api/openapi/v1.yaml.
-type ExpensePage struct {
-	Expenses      []Expense `json:"expenses"`
-	NextPageToken string    `json:"next_page_token"`
-}
-
-// ExpenseRule is an object of the API; see components.schemas.ExpenseRule in api/openapi/v1.yaml.
-type ExpenseRule struct {
-	ID string `json:"id"`
-	// Case-insensitive text the vendor name contains
-	VendorMatch string `json:"vendor_match"`
-	Category    string `json:"category"`
-	Currency    string `json:"currency"`
-	// The tax share of the amount, in basis points
-	TaxBps int `json:"tax_bps"`
-	// What this vendor usually bills, in minor units; 0: no expectation
-	ExpectedAmountMinor Int64 `json:"expected_amount_minor"`
-	ToleranceBps        int   `json:"tolerance_bps"`
-	// Needs an expected amount
-	AutoApprove bool   `json:"auto_approve"`
-	AppID       string `json:"app_id"`
-}
-
-// ExpenseRuleInput is an object of the API; see components.schemas.ExpenseRuleInput in api/openapi/v1.yaml.
-type ExpenseRuleInput struct {
-	ID string `json:"id,omitempty"`
-	// Case-insensitive text the vendor name contains
-	VendorMatch string `json:"vendor_match"`
-	Category    string `json:"category"`
-	Currency    string `json:"currency"`
-	// The tax share of the amount, in basis points
-	TaxBps *int `json:"tax_bps,omitempty"`
-	// What this vendor usually bills, in minor units; 0: no expectation
-	ExpectedAmountMinor *Int64 `json:"expected_amount_minor,omitempty"`
-	ToleranceBps        *int   `json:"tolerance_bps,omitempty"`
-	// Needs an expected amount
-	AutoApprove *bool  `json:"auto_approve,omitempty"`
-	AppID       string `json:"app_id,omitempty"`
-}
-
 // GetAffiliateBalancesResponse is the response of GetAffiliateBalances.
 type GetAffiliateBalancesResponse struct {
 	Balances []AffiliateBalance `json:"balances"`
@@ -1895,26 +1742,6 @@ type GrantCustomerCouponRequest struct {
 // GrantCustomerCouponResponse is the response of GrantCustomerCoupon.
 type GrantCustomerCouponResponse struct {
 	Granted bool `json:"granted"`
-}
-
-// InboxItem is an object of the API; see components.schemas.InboxItem in api/openapi/v1.yaml.
-type InboxItem struct {
-	ID          string `json:"id"`
-	AppID       string `json:"app_id"`
-	From        string `json:"from"`
-	Subject     string `json:"subject"`
-	Filename    string `json:"filename"`
-	ContentType string `json:"content_type"`
-	SizeBytes   string `json:"size_bytes"`
-	// One of: to_review, accepted, dismissed.
-	Status      string     `json:"status"`
-	ExpenseID   string     `json:"expense_id"`
-	ReceiveTime *time.Time `json:"receive_time"`
-}
-
-// InboxItemPage is an object of the API; see components.schemas.InboxItemPage in api/openapi/v1.yaml.
-type InboxItemPage struct {
-	Items []InboxItem `json:"items"`
 }
 
 // IncomingEvent is an object of the API; see components.schemas.IncomingEvent in api/openapi/v1.yaml.
@@ -2199,11 +2026,6 @@ type ListEntitlementsResponse struct {
 	Items []EntitlementStatus `json:"items"`
 }
 
-// ListExpenseRulesResponse is the response of ListExpenseRules.
-type ListExpenseRulesResponse struct {
-	Rules []ExpenseRule `json:"rules"`
-}
-
 // ListInvoicesResponse is the response of ListInvoices.
 type ListInvoicesResponse struct {
 	// How many rows match, on a searched, narrowed or sorted list; 0 on the plain list
@@ -2417,6 +2239,8 @@ type PaymentLink struct {
 	// The agreements the payer accepts on this link's page instead of the seller's tenant-wide setting (GET
 	// /v1/contracts/settings); empty: the setting applies
 	RequiredContracts []string `json:"required_contracts"`
+	// The "return to app" address this link's page offers instead of the app's setting; empty: the app's
+	ReturnURL string `json:"return_url"`
 	// kind invoice: the invoice; empty for an ad-hoc link (its invoices are made on use)
 	InvoiceID          string `json:"invoice_id"`
 	CustomerExternalID string `json:"customer_external_id"`
@@ -2880,13 +2704,6 @@ type RequestContractWithdrawalRefundRequest struct {
 	AmountMinor *Int64 `json:"amount_minor,omitempty"`
 }
 
-// ResolveInboxItemRequest is the request body of ResolveInboxItem.
-type ResolveInboxItemRequest struct {
-	// One of: accepted, dismissed.
-	Status    string `json:"status"`
-	ExpenseID string `json:"expense_id,omitempty"`
-}
-
 // ReverseAffiliateCommissionRequest is the request body of ReverseAffiliateCommission.
 type ReverseAffiliateCommissionRequest struct {
 	InvoiceID string `json:"invoice_id"`
@@ -3273,11 +3090,6 @@ type UploadSession struct {
 	Files      []UploadFile `json:"files"`
 }
 
-// VoidExpenseRequest is the request body of VoidExpense.
-type VoidExpenseRequest struct {
-	Reason string `json:"reason"`
-}
-
 // WebhookDelivery is an object of the API; see components.schemas.WebhookDelivery in api/openapi/v1.yaml.
 type WebhookDelivery struct {
 	ID string `json:"id"`
@@ -3328,95 +3140,6 @@ type WithdrawPriceChangeResponse struct {
 	PriceChange PriceChange `json:"price_change"`
 	// How many waiting changes this call cancelled
 	Withdrawn int `json:"withdrawn"`
-}
-
-// ExportAccountingCouponsCsvParams are the query parameters of ExportAccountingCouponsCsv.
-type ExportAccountingCouponsCsvParams struct {
-	From  string
-	To    string
-	AppID string
-	// One of: day, month.
-	Granularity string
-}
-
-func (p *ExportAccountingCouponsCsvParams) values() url.Values {
-	v := url.Values{}
-	if p == nil {
-		return v
-	}
-	if p.From != "" {
-		v.Set("from", p.From)
-	}
-	if p.To != "" {
-		v.Set("to", p.To)
-	}
-	if p.AppID != "" {
-		v.Set("app_id", p.AppID)
-	}
-	if p.Granularity != "" {
-		v.Set("granularity", p.Granularity)
-	}
-	return v
-}
-
-// ExportAccountingCsvParams are the query parameters of ExportAccountingCsv.
-type ExportAccountingCsvParams struct {
-	From  string
-	To    string
-	AppID string
-	// One of: day, month.
-	Granularity string
-}
-
-func (p *ExportAccountingCsvParams) values() url.Values {
-	v := url.Values{}
-	if p == nil {
-		return v
-	}
-	if p.From != "" {
-		v.Set("from", p.From)
-	}
-	if p.To != "" {
-		v.Set("to", p.To)
-	}
-	if p.AppID != "" {
-		v.Set("app_id", p.AppID)
-	}
-	if p.Granularity != "" {
-		v.Set("granularity", p.Granularity)
-	}
-	return v
-}
-
-// GetAccountingSummaryParams are the query parameters of GetAccountingSummary.
-type GetAccountingSummaryParams struct {
-	// First day, inside the period
-	From string
-	// Last day, inside the period; at most five years after `from`
-	To    string
-	AppID string
-	// Default: day up to 62 days, month beyond. Day is allowed for at most 366 days. One of: day, month.
-	Granularity string
-}
-
-func (p *GetAccountingSummaryParams) values() url.Values {
-	v := url.Values{}
-	if p == nil {
-		return v
-	}
-	if p.From != "" {
-		v.Set("from", p.From)
-	}
-	if p.To != "" {
-		v.Set("to", p.To)
-	}
-	if p.AppID != "" {
-		v.Set("app_id", p.AppID)
-	}
-	if p.Granularity != "" {
-		v.Set("granularity", p.Granularity)
-	}
-	return v
 }
 
 // ListAffiliatesParams are the query parameters of ListAffiliates.
@@ -4294,123 +4017,6 @@ func (p *ListEInvoicesParams) values() url.Values {
 	}
 	if p.PageToken != "" {
 		v.Set("page_token", p.PageToken)
-	}
-	return v
-}
-
-// GetExpenseInboxParams are the query parameters of GetExpenseInbox.
-type GetExpenseInboxParams struct {
-	// The inbox of one app instead of the whole tenant
-	AppID string
-}
-
-func (p *GetExpenseInboxParams) values() url.Values {
-	v := url.Values{}
-	if p == nil {
-		return v
-	}
-	if p.AppID != "" {
-		v.Set("app_id", p.AppID)
-	}
-	return v
-}
-
-// ListInboxItemsParams are the query parameters of ListInboxItems.
-type ListInboxItemsParams struct {
-	// One of: to_review, accepted, dismissed.
-	Status   string
-	PageSize *int
-}
-
-func (p *ListInboxItemsParams) values() url.Values {
-	v := url.Values{}
-	if p == nil {
-		return v
-	}
-	if p.Status != "" {
-		v.Set("status", p.Status)
-	}
-	if p.PageSize != nil {
-		v.Set("page_size", strconv.Itoa(*p.PageSize))
-	}
-	return v
-}
-
-// RotateExpenseInboxParams are the query parameters of RotateExpenseInbox.
-type RotateExpenseInboxParams struct {
-	AppID string
-}
-
-func (p *RotateExpenseInboxParams) values() url.Values {
-	v := url.Values{}
-	if p == nil {
-		return v
-	}
-	if p.AppID != "" {
-		v.Set("app_id", p.AppID)
-	}
-	return v
-}
-
-// ListExpensesParams are the query parameters of ListExpenses.
-type ListExpensesParams struct {
-	// One of: infrastructure, payment_fees, marketing, payroll, tax, software, other.
-	Category string
-	AppID    string
-	Currency string
-	// Only entries whose (first) day is on or after this day
-	From string
-	// Only entries whose (first) day is on or before this day
-	To            string
-	IncludeVoided *bool
-	PageSize      *int
-	PageToken     string
-}
-
-func (p *ListExpensesParams) values() url.Values {
-	v := url.Values{}
-	if p == nil {
-		return v
-	}
-	if p.Category != "" {
-		v.Set("category", p.Category)
-	}
-	if p.AppID != "" {
-		v.Set("app_id", p.AppID)
-	}
-	if p.Currency != "" {
-		v.Set("currency", p.Currency)
-	}
-	if p.From != "" {
-		v.Set("from", p.From)
-	}
-	if p.To != "" {
-		v.Set("to", p.To)
-	}
-	if p.IncludeVoided != nil {
-		v.Set("include_voided", strconv.FormatBool(*p.IncludeVoided))
-	}
-	if p.PageSize != nil {
-		v.Set("page_size", strconv.Itoa(*p.PageSize))
-	}
-	if p.PageToken != "" {
-		v.Set("page_token", p.PageToken)
-	}
-	return v
-}
-
-// VoidExpenseParams are the query parameters of VoidExpense.
-type VoidExpenseParams struct {
-	Reason string
-}
-
-func (p *VoidExpenseParams) values() url.Values {
-	v := url.Values{}
-	if p == nil {
-		return v
-	}
-	if p.Reason != "" {
-		v.Set("reason", p.Reason)
 	}
 	return v
 }

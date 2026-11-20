@@ -153,7 +153,7 @@ func TestNaming(t *testing.T) {
 			t.Errorf("Pascal(%q) = %q, want %q", in, got, want)
 		}
 	}
-	if got := ServiceName("/v1/expense-inbox/items/{id}/file"); got != "ExpenseInbox" {
+	if got := ServiceName("/v1/webhook-endpoints/{id}/rotate-secret"); got != "WebhookEndpoints" {
 		t.Errorf("ServiceName = %q", got)
 	}
 }

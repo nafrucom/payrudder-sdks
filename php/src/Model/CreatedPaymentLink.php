@@ -26,6 +26,7 @@ final class CreatedPaymentLink implements Model
      * @param int|null $credits
      * @param string|null $promotionCode
      * @param list<CreatedPaymentLinkRequiredContractsItem|string>|null $requiredContracts
+     * @param string|null $returnUrl
      * @param string|null $invoiceId
      * @param string|null $customerExternalId
      * @param bool|null $singleUse
@@ -56,6 +57,7 @@ final class CreatedPaymentLink implements Model
         public readonly ?int $credits = null,
         public readonly ?string $promotionCode = null,
         public readonly ?array $requiredContracts = null,
+        public readonly ?string $returnUrl = null,
         public readonly ?string $invoiceId = null,
         public readonly ?string $customerExternalId = null,
         public readonly ?bool $singleUse = null,
@@ -92,6 +94,7 @@ final class CreatedPaymentLink implements Model
             credits: Cast::int($data['credits'] ?? null),
             promotionCode: Cast::string($data['promotion_code'] ?? null),
             requiredContracts: Cast::enums(CreatedPaymentLinkRequiredContractsItem::class, $data['required_contracts'] ?? null),
+            returnUrl: Cast::string($data['return_url'] ?? null),
             invoiceId: Cast::string($data['invoice_id'] ?? null),
             customerExternalId: Cast::string($data['customer_external_id'] ?? null),
             singleUse: Cast::bool($data['single_use'] ?? null),
@@ -129,6 +132,7 @@ final class CreatedPaymentLink implements Model
             'credits' => Cast::int64($this->credits),
             'promotion_code' => $this->promotionCode,
             'required_contracts' => Cast::wire($this->requiredContracts),
+            'return_url' => $this->returnUrl,
             'invoice_id' => $this->invoiceId,
             'customer_external_id' => $this->customerExternalId,
             'single_use' => $this->singleUse,

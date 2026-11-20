@@ -2,7 +2,6 @@
 import type { RequestOptions, Transport } from "../transport";
 import { seg } from "../transport";
 import type {
-  AccountingSummary,
   AddBlocklistEntryRequest,
   AddDisputeNoteRequest,
   AddressInput,
@@ -49,6 +48,7 @@ import type {
   CreatePortalLinkResponse,
   CreatePromotionCodesParams,
   CreatePromotionCodesResponse,
+  CreateSubscriptionCheckoutResponse,
   CreateSubscriptionRequest,
   CreateUploadSessionRequest,
   CreateWebhookEndpointRequest,
@@ -82,17 +82,8 @@ import type {
   EntitlementOverride,
   EntitlementStatus,
   EntitlementTerms,
-  Expense,
-  ExpenseInbox,
-  ExpenseInputParams,
-  ExpensePage,
-  ExpenseRule,
-  ExpenseRuleInputParams,
-  ExportAccountingCouponsCsvQuery,
-  ExportAccountingCsvQuery,
   ExportAffiliateJournalQuery,
   ExportAuditEventsQuery,
-  GetAccountingSummaryQuery,
   GetAffiliateBalancesQuery,
   GetAffiliateBalancesResponse,
   GetAffiliateFunnelQuery,
@@ -109,7 +100,6 @@ import type {
   GetDunningReportQuery,
   GetDunningReportResponse,
   GetEntitlementQuery,
-  GetExpenseInboxQuery,
   GetPriceChangeQuery,
   GetPriceChangeResponse,
   GetRevenueReportQuery,
@@ -120,8 +110,6 @@ import type {
   GetTopCustomersResponse,
   GrantCustomerCouponRequest,
   GrantCustomerCouponResponse,
-  InboxItem,
-  InboxItemPage,
   IngestEventsRequest,
   IngestEventsResponse,
   Invoice,
@@ -169,9 +157,6 @@ import type {
   ListEntitlementOverridesResponse,
   ListEntitlementsQuery,
   ListEntitlementsResponse,
-  ListExpenseRulesResponse,
-  ListExpensesQuery,
-  ListInboxItemsQuery,
   ListInvoicesQuery,
   ListInvoicesResponse,
   ListMailMessagesQuery,
@@ -222,12 +207,10 @@ import type {
   RejectedEventSummary,
   RenderedMail,
   RequestContractWithdrawalRefundRequestParams,
-  ResolveInboxItemRequest,
   ReverseAffiliateCommissionRequestParams,
   ReverseAffiliateCommissionResponse,
   RevokeInvoiceLinksResponse,
   RevokePortalLinksResponse,
-  RotateExpenseInboxQuery,
   RoutingRules,
   RoutingRulesInput,
   SandboxClosePeriodRequest,
@@ -253,50 +236,11 @@ import type {
   UploadAssetsResponse,
   UploadFile,
   UploadSession,
-  VoidExpenseQuery,
-  VoidExpenseRequest,
   WebhookDelivery,
   WebhookEndpoint,
   WebhookEndpointInput,
   WithdrawPriceChangeResponse,
 } from "./types";
-
-export class AccountingResource {
-  constructor(private readonly t: Transport) {}
-
-  /**
-   * Income and expenses of a period, one block per currency
-   *
-   * Currencies are never converted or added together. Income is read from the invoices: an invoice counts on the day its payment succeeded, a day of the tenant's time zone like `from` and `to` (gross is its total, tax its TAX lines), credit notes against paid invoices and invoices refunded in full are the refunds. Provider commission is not recorded by Payrudder; `provider_fees_minor` is what the tenant entered as `payment_fees` expenses, and `provider_fees_recorded` is false when there is none. `expenses_minor` includes those fees. `profit_minor` is net income minus expenses. The series has one point for every day (or month) of the period. `app_id` limits the expenses, not the income.
-   *
-   * `GET /v1/accounting/summary`
-   */
-  getAccountingSummary(query: GetAccountingSummaryQuery, options?: RequestOptions): Promise<AccountingSummary> {
-    return this.t.request<AccountingSummary>({ method: "GET", path: `/v1/accounting/summary`, query, response: "json" }, options);
-  }
-
-  /**
-   * The accounting series as CSV
-   *
-   * The query of the summary. One row per currency and day (or month), then a `total` row per currency; amounts are minor units. The `provider_fees_minor` of a total row is `not_recorded` when no `payment_fees` expense exists. `discounts_minor` is what coupons took off (contra-revenue) and `sales_before_discounts_minor` is gross - tax + discounts.
-   *
-   * `GET /v1/accounting/export.csv`
-   */
-  exportAccountingCsv(query: ExportAccountingCsvQuery, options?: RequestOptions): Promise<string> {
-    return this.t.request<string>({ method: "GET", path: `/v1/accounting/export.csv`, query, response: "text" }, options);
-  }
-
-  /**
-   * Gross sales, discounts and net per coupon as CSV
-   *
-   * The query of the summary. One row per currency and coupon over the invoices paid in the period: their number, what they came to before the coupon (positive lines, tax excluded), what the coupon took off, and the net. Currencies are never added together.
-   *
-   * `GET /v1/accounting/coupons.csv`
-   */
-  exportAccountingCouponsCsv(query: ExportAccountingCouponsCsvQuery, options?: RequestOptions): Promise<string> {
-    return this.t.request<string>({ method: "GET", path: `/v1/accounting/coupons.csv`, query, response: "text" }, options);
-  }
-}
 
 export class AffiliatesResource {
   constructor(private readonly t: Transport) {}
@@ -1594,155 +1538,6 @@ export class EventsResourceBase {
   }
 }
 
-export class ExpenseInboxResource {
-  constructor(private readonly t: Transport) {}
-
-  /**
-   * The tenant's invoice inbox address
-   *
-   * Invoices received by mail are forwarded to `invoices+<token>@<inbound domain>`. The attachments wait as items to review; the console reads them in the browser. Made on first use. `address` is empty until the deployment has an inbound mail domain.
-   *
-   * `GET /v1/expense-inbox`
-   */
-  getExpenseInbox(query?: GetExpenseInboxQuery, options?: RequestOptions): Promise<ExpenseInbox> {
-    return this.t.request<ExpenseInbox>({ method: "GET", path: `/v1/expense-inbox`, query, response: "json" }, options);
-  }
-
-  /**
-   * Give the invoice inbox a new address
-   *
-   * Mail sent to the old address is dropped.
-   *
-   * `POST /v1/expense-inbox/rotate`
-   */
-  rotateExpenseInbox(query?: RotateExpenseInboxQuery, options?: RequestOptions): Promise<ExpenseInbox> {
-    return this.t.request<ExpenseInbox>({ method: "POST", path: `/v1/expense-inbox/rotate`, query, response: "json" }, options);
-  }
-
-  /**
-   * The attachments received by mail, newest first
-   *
-   * Not paged: the newest page_size items; there is no page_token, so older items come into view once the newer ones are resolved.
-   *
-   * `GET /v1/expense-inbox/items`
-   */
-  listInboxItems(query?: ListInboxItemsQuery, options?: RequestOptions): Promise<InboxItemPage> {
-    return this.t.request<InboxItemPage>({ method: "GET", path: `/v1/expense-inbox/items`, query, response: "json" }, options);
-  }
-
-  /**
-   * The bytes of a received attachment
-   *
-   * `GET /v1/expense-inbox/items/{id}/file`
-   */
-  getInboxItemFile(id: string, options?: RequestOptions): Promise<Uint8Array> {
-    return this.t.request<Uint8Array>({ method: "GET", path: `/v1/expense-inbox/items/${seg(id)}/file`, response: "bytes" }, options);
-  }
-
-  /**
-   * Mark a received attachment accepted or dismissed
-   *
-   * An item is resolved once. Accepting records the expense that was made from it.
-   *
-   * `POST /v1/expense-inbox/items/{id}/resolve`
-   */
-  resolveInboxItem(id: string, body: ResolveInboxItemRequest, options?: RequestOptions): Promise<InboxItem> {
-    return this.t.request<InboxItem>({ method: "POST", path: `/v1/expense-inbox/items/${seg(id)}/resolve`, body, bodyKind: "json", response: "json" }, options);
-  }
-}
-
-export class ExpenseRulesResource {
-  constructor(private readonly t: Transport) {}
-
-  /**
-   * The recurring-vendor rules
-   *
-   * Not paged: the response is the complete list.
-   *
-   * `GET /v1/expense-rules`
-   */
-  listExpenseRules(options?: RequestOptions): Promise<ListExpenseRulesResponse> {
-    return this.t.request<ListExpenseRulesResponse>({ method: "GET", path: `/v1/expense-rules`, response: "json" }, options);
-  }
-
-  /**
-   * Add a recurring-vendor rule
-   *
-   * A vendor whose name contains `vendor_match` gets the category, currency and tax of the rule. With `auto_approve` the console records the expense on its own when the amount read from the document is within `tolerance_bps` of `expected_amount_minor`.
-   *
-   * `POST /v1/expense-rules`
-   */
-  createExpenseRule(body: ExpenseRuleInputParams, options?: RequestOptions): Promise<ExpenseRule> {
-    return this.t.request<ExpenseRule>({ method: "POST", path: `/v1/expense-rules`, body, bodyKind: "json", response: "json" }, options);
-  }
-
-  /**
-   * Replace a recurring-vendor rule
-   *
-   * `PUT /v1/expense-rules/{id}`
-   */
-  updateExpenseRule(id: string, body: ExpenseRuleInputParams, options?: RequestOptions): Promise<ExpenseRule> {
-    return this.t.request<ExpenseRule>({ method: "PUT", path: `/v1/expense-rules/${seg(id)}`, body, bodyKind: "json", response: "json" }, options);
-  }
-
-  /**
-   * Delete a recurring-vendor rule
-   *
-   * `DELETE /v1/expense-rules/{id}`
-   */
-  deleteExpenseRule(id: string, options?: RequestOptions): Promise<void> {
-    return this.t.request<void>({ method: "DELETE", path: `/v1/expense-rules/${seg(id)}`, response: "none" }, options);
-  }
-}
-
-export class ExpensesResource {
-  constructor(private readonly t: Transport) {}
-
-  /**
-   * The expenses the tenant recorded, newest first
-   *
-   * A recurring expense is one entry, listed at its first day. Voided expenses are left out unless `include_voided` is true.
-   *
-   * `GET /v1/expenses`
-   */
-  listExpenses(query?: ListExpensesQuery, options?: RequestOptions): Promise<ExpensePage> {
-    return this.t.request<ExpensePage>({ method: "GET", path: `/v1/expenses`, query, response: "json" }, options);
-  }
-
-  /**
-   * Record an expense
-   *
-   * Money the tenant spent, in one currency. A monthly or yearly expense is one entry that falls on the same day of every month or year from `incurred_on` (on the last day of a shorter month) until `recurring_until`; its occurrences are worked out when a summary is asked for.
-   *
-   * `POST /v1/expenses`
-   */
-  createExpense(body: ExpenseInputParams, options?: RequestOptions): Promise<Expense> {
-    return this.t.request<Expense>({ method: "POST", path: `/v1/expenses`, body, bodyKind: "json", response: "json" }, options);
-  }
-
-  /**
-   * Replace an expense
-   *
-   * The body replaces the whole record; a recurring expense changes in all its occurrences. A voided expense is not edited (`billing.accounting.expense_voided`).
-   *
-   * `PUT /v1/expenses/{id}`
-   */
-  updateExpense(id: string, body: ExpenseInputParams, options?: RequestOptions): Promise<Expense> {
-    return this.t.request<Expense>({ method: "PUT", path: `/v1/expenses/${seg(id)}`, body, bodyKind: "json", response: "json" }, options);
-  }
-
-  /**
-   * Void an expense
-   *
-   * The expense is not deleted: it leaves every summary and keeps its reason. The reason (1 to 200 characters) comes in the body `{"reason": "..."}` or in `?reason=`.
-   *
-   * `DELETE /v1/expenses/{id}`
-   */
-  voidExpense(id: string, body?: VoidExpenseRequest, query?: VoidExpenseQuery, options?: RequestOptions): Promise<Expense> {
-    return this.t.request<Expense>({ method: "DELETE", path: `/v1/expenses/${seg(id)}`, query, body, bodyKind: "json", response: "json" }, options);
-  }
-}
-
 export class InvoicesResource {
   constructor(private readonly t: Transport) {}
 
@@ -2431,6 +2226,17 @@ export class SubscriptionsResource {
    */
   changeSubscription(id: string, body: ChangeRequest, options?: RequestOptions): Promise<ChangeSubscriptionResponse> {
     return this.t.request<ChangeSubscriptionResponse>({ method: "POST", path: `/v1/subscriptions/${seg(id)}/change`, body, bodyKind: "json", response: "json" }, options);
+  }
+
+  /**
+   * The page where the customer starts a subscription a payment provider renews (Paddle)
+   *
+   * For a running subscription whose provider renews subscriptions itself and that the customer has not subscribed to there yet. The answer is a Payrudder page (a portal link of the customer, valid for 7 days) with the provider's payment form inside it. Payrudder creates the plan's product and price at the provider when it holds none. Once the customer has paid, the provider's subscription.created notification links the provider's subscription to this one and the provider renews it from then on. 409 `plans.subscription.already_subscribed` when the customer has subscribed already, `plans.subscription.no_checkout` for a subscription Payrudder renews (its invoices are paid on their own pages).
+   *
+   * `POST /v1/subscriptions/{id}/checkout`
+   */
+  createSubscriptionCheckout(id: string, options?: RequestOptions): Promise<CreateSubscriptionCheckoutResponse> {
+    return this.t.request<CreateSubscriptionCheckoutResponse>({ method: "POST", path: `/v1/subscriptions/${seg(id)}/checkout`, response: "json" }, options);
   }
 
   /**

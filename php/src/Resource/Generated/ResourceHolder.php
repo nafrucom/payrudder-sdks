@@ -13,7 +13,6 @@ use Payrudder\Internal\Requester;
  */
 abstract class ResourceHolder
 {
-    public readonly AccountingResource $accounting;
     public readonly AffiliatesResource $affiliates;
     public readonly AnalyticsResource $analytics;
     public readonly AssetsResource $assets;
@@ -32,9 +31,6 @@ abstract class ResourceHolder
     public readonly DunningSettingsResource $dunningSettings;
     public readonly EInvoicesResource $eInvoices;
     public readonly EventsResource $events;
-    public readonly ExpenseInboxResource $expenseInbox;
-    public readonly ExpenseRulesResource $expenseRules;
-    public readonly ExpensesResource $expenses;
     public readonly InvoicesResource $invoices;
     public readonly MailMessagesResource $mailMessages;
     public readonly MailPreviewsResource $mailPreviews;
@@ -59,7 +55,6 @@ abstract class ResourceHolder
 
     public function __construct(Requester $requester)
     {
-        $this->accounting = new AccountingResource($requester);
         $this->affiliates = new AffiliatesResource($requester);
         $this->analytics = new AnalyticsResource($requester);
         $this->assets = new AssetsResource($requester);
@@ -78,9 +73,6 @@ abstract class ResourceHolder
         $this->dunningSettings = new DunningSettingsResource($requester);
         $this->eInvoices = new EInvoicesResource($requester);
         $this->events = new EventsResource($requester);
-        $this->expenseInbox = new ExpenseInboxResource($requester);
-        $this->expenseRules = new ExpenseRulesResource($requester);
-        $this->expenses = new ExpensesResource($requester);
         $this->invoices = new InvoicesResource($requester);
         $this->mailMessages = new MailMessagesResource($requester);
         $this->mailPreviews = new MailPreviewsResource($requester);

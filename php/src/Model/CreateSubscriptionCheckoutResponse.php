@@ -10,15 +10,17 @@ use Payrudder\Contract\Model;
 use Payrudder\Internal\Cast;
 
 /**
- * InboxItemPage
+ * CreateSubscriptionCheckoutResponse
  */
-final class InboxItemPage implements Model
+final class CreateSubscriptionCheckoutResponse implements Model
 {
     /**
-     * @param list<InboxItem>|null $items
+     * @param string|null $url
+     * @param string|null $expiresAt
      */
     public function __construct(
-        public readonly ?array $items = null,
+        public readonly ?string $url = null,
+        public readonly ?string $expiresAt = null,
     ) {}
 
     /**
@@ -27,7 +29,8 @@ final class InboxItemPage implements Model
     public static function fromArray(array $data): static
     {
         return new static(
-            items: Cast::models(InboxItem::class, $data['items'] ?? null),
+            url: Cast::string($data['url'] ?? null),
+            expiresAt: Cast::string($data['expires_at'] ?? null),
         );
     }
 
@@ -37,7 +40,8 @@ final class InboxItemPage implements Model
     public function toArray(): array
     {
         return Cast::compact([
-            'items' => Cast::wire($this->items),
+            'url' => $this->url,
+            'expires_at' => $this->expiresAt,
         ]);
     }
 }
