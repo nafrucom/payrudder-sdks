@@ -913,6 +913,18 @@ type CreatePaymentLinkRequest struct {
 	// Default 30 for adhoc, 90 for invoice
 	ExpiresInDays  *int   `json:"expires_in_days,omitempty"`
 	IdempotencyKey string `json:"idempotency_key,omitempty"`
+	// kind adhoc: the order. Unit prices include VAT; the invoice has a line per item and the VAT per rate. A link
+	// with items is single-use and needs a buyer, a billing address and customer_external_id or customer_email
+	Items []LinkItem `json:"items,omitempty"`
+	// kind adhoc: the buyer's e-mail; finds or makes the customer when customer_external_id is not given
+	CustomerEmail string `json:"customer_email,omitempty"`
+	// kind adhoc: the shop's own reference for the order; goes to the invoice, the webhook events and the return URL
+	OrderRef string     `json:"order_ref,omitempty"`
+	Buyer    *LinkBuyer `json:"buyer,omitempty"`
+	// Needed when an item is physical, with line1, city and a two-letter country (400
+	// billing.link.shipping_required); passed to the payment provider, never stored after payment, expiry or
+	// revocation, and never returned
+	ShippingAddress *AddressInput `json:"shipping_address,omitempty"`
 }
 
 // CreatePaymentMethodSetupRequest is the request body of CreatePaymentMethodSetup.
@@ -1051,6 +1063,14 @@ type CreatedPaymentLink struct {
 	// Invoices the link created (ad hoc)
 	UseCount       int    `json:"use_count"`
 	IdempotencyKey string `json:"idempotency_key"`
+	// kind adhoc: the order. Unit prices include VAT; the invoice has a line per item and the VAT per rate. A link
+	// with items is single-use and needs a buyer, a billing address and customer_external_id or customer_email
+	Items []LinkItem `json:"items,omitempty"`
+	// kind adhoc: the buyer's e-mail; finds or makes the customer when customer_external_id is not given
+	CustomerEmail string `json:"customer_email,omitempty"`
+	// kind adhoc: the shop's own reference for the order; goes to the invoice, the webhook events and the return URL
+	OrderRef string    `json:"order_ref,omitempty"`
+	Buyer    LinkBuyer `json:"buyer,omitempty"`
 	// The secret part of the link; shown once, empty on a replay
 	Token string `json:"token"`
 	// Absolute when the deployment has a public address set; empty on a replay
@@ -1958,7 +1978,7 @@ type Invoice struct {
 // InvoiceLine is an object of the API; see components.schemas.InvoiceLine in api/openapi/v1.yaml.
 type InvoiceLine struct {
 	LineNo int `json:"line_no"`
-	// One of: BASE_FEE, USAGE, LATE_USAGE, CREDIT, CORRECTION, DISCOUNT, TAX.
+	// One of: BASE_FEE, USAGE, LATE_USAGE, CREDIT, CORRECTION, DISCOUNT, TAX, ITEM.
 	Kind           string `json:"kind"`
 	MeterCode      string `json:"meter_code"`
 	OriginPeriodID string `json:"origin_period_id"`
@@ -1968,6 +1988,9 @@ type InvoiceLine struct {
 	// The service period the line covers, nullable: true
 	ServiceFrom time.Time  `json:"service_from"`
 	ServiceTo   *time.Time `json:"service_to"`
+	// ITEM lines and the TAX line of each rate of an order: the VAT rate in basis points (2000 is 20 %); 0 or
+	// absent for other lines
+	TaxRateBps int `json:"tax_rate_bps,omitempty"`
 }
 
 // InvoicePayment is an object of the API; see components.schemas.InvoicePayment in api/openapi/v1.yaml.
@@ -1999,6 +2022,33 @@ type InvoiceSaga struct {
 // LinkAffiliatePromotionCodeRequest is the request body of LinkAffiliatePromotionCode.
 type LinkAffiliatePromotionCodeRequest struct {
 	PromotionCode string `json:"promotion_code"`
+}
+
+// LinkBuyer: Who the invoice is made out to when the link has items. 400 billing.link.buyer_required when a
+// field below is missing or malformed
+type LinkBuyer struct {
+	// Required with items
+	Name string `json:"name,omitempty"`
+	// A 10-digit VKN or an 11-digit TCKN; empty for a consumer without one (a buyer in Turkey is then invoiced as
+	// 11111111111)
+	TaxID string `json:"tax_id,omitempty"`
+	// Required with items: line1, city and a two-letter country; each field at most 200 characters
+	BillingAddress *AddressInput `json:"billing_address,omitempty"`
+}
+
+// LinkItem is an object of the API; see components.schemas.LinkItem in api/openapi/v1.yaml.
+type LinkItem struct {
+	// The seller's own reference for the item (a SKU); optional
+	Ref  string `json:"ref,omitempty"`
+	Name string `json:"name"`
+	// int64 as a string (a number is accepted in a request)
+	Quantity Int64 `json:"quantity"`
+	// Price of one, VAT included, minor units; int64 as a string
+	UnitAmountMinor Int64 `json:"unit_amount_minor"`
+	// 2000 is 20 %. 0 (no VAT) is not supported
+	VATRateBps int `json:"vat_rate_bps"`
+	// A physical item needs a shipping address on the link
+	Physical *bool `json:"physical,omitempty"`
 }
 
 // ListAffiliateCommissionsResponse is the response of ListAffiliateCommissions.
@@ -2384,6 +2434,14 @@ type PaymentLink struct {
 	// Invoices the link created (ad hoc)
 	UseCount       int    `json:"use_count"`
 	IdempotencyKey string `json:"idempotency_key"`
+	// kind adhoc: the order. Unit prices include VAT; the invoice has a line per item and the VAT per rate. A link
+	// with items is single-use and needs a buyer, a billing address and customer_external_id or customer_email
+	Items []LinkItem `json:"items,omitempty"`
+	// kind adhoc: the buyer's e-mail; finds or makes the customer when customer_external_id is not given
+	CustomerEmail string `json:"customer_email,omitempty"`
+	// kind adhoc: the shop's own reference for the order; goes to the invoice, the webhook events and the return URL
+	OrderRef string    `json:"order_ref,omitempty"`
+	Buyer    LinkBuyer `json:"buyer,omitempty"`
 }
 
 // PaymentMethodSetup is an object of the API; see components.schemas.PaymentMethodSetup in api/openapi/v1.yaml.

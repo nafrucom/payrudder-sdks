@@ -15,4 +15,5 @@ enum InvoiceLineKind: string
     case Correction = 'CORRECTION';
     case Discount = 'DISCOUNT';
     case Tax = 'TAX';
+    case Item = 'ITEM';
 }

@@ -604,9 +604,9 @@ class GetCustomerUsageResponse(TypedDict):
     usage: list[GetCustomerUsageUsage]
 
 
-class InvoiceLine(TypedDict):
+class _InvoiceLineRequired(TypedDict):
     line_no: int
-    kind: Literal["BASE_FEE", "USAGE", "LATE_USAGE", "CREDIT", "CORRECTION", "DISCOUNT", "TAX"]
+    kind: Literal["BASE_FEE", "USAGE", "LATE_USAGE", "CREDIT", "CORRECTION", "DISCOUNT", "TAX", "ITEM"]
     meter_code: str
     origin_period_id: str
     quantity: str
@@ -614,6 +614,10 @@ class InvoiceLine(TypedDict):
     description: str
     service_from: str
     service_to: str | None
+
+
+class InvoiceLine(_InvoiceLineRequired, total=False):
+    tax_rate_bps: int
 
 
 class UpcomingInvoice(TypedDict):
@@ -2035,7 +2039,26 @@ class RevokeInvoiceLinksResponse(TypedDict):
     revoked: int
 
 
-class PaymentLink(TypedDict):
+class _LinkItemRequired(TypedDict):
+    name: str
+    quantity: int
+    unit_amount_minor: int
+    vat_rate_bps: int
+
+
+class LinkItem(_LinkItemRequired, total=False):
+    ref: str
+    physical: bool
+
+
+class LinkBuyer(TypedDict, total=False):
+    """Who the invoice is made out to when the link has items. 400 billing.link.buyer_required when a field below is missing or malformed"""
+    name: str
+    tax_id: str
+    billing_address: AddressInput
+
+
+class _PaymentLinkRequired(TypedDict):
     id: str
     kind: Literal["invoice", "adhoc", "credit_pack"]
     status: Literal["active", "paid", "expired", "revoked"]
@@ -2059,6 +2082,13 @@ class PaymentLink(TypedDict):
     idempotency_key: str
 
 
+class PaymentLink(_PaymentLinkRequired, total=False):
+    items: list[LinkItem]
+    customer_email: str
+    order_ref: str
+    buyer: LinkBuyer
+
+
 class ListPaymentLinksResponse(TypedDict):
     links: list[PaymentLink]
     next_page_token: str
@@ -2078,9 +2108,14 @@ class CreatePaymentLinkRequest(TypedDict, total=False):
     required_contracts: list[Literal["distance_sales", "pre_info", "tos", "privacy"]]
     expires_in_days: int
     idempotency_key: str
+    items: list[LinkItem]
+    customer_email: str
+    order_ref: str
+    buyer: LinkBuyer
+    shipping_address: AddressInput
 
 
-class CreatedPaymentLink(TypedDict):
+class _CreatedPaymentLinkRequired(TypedDict):
     id: str
     kind: Literal["invoice", "adhoc", "credit_pack"]
     status: Literal["active", "paid", "expired", "revoked"]
@@ -2105,6 +2140,13 @@ class CreatedPaymentLink(TypedDict):
     token: str
     url: str
     replayed: bool
+
+
+class CreatedPaymentLink(_CreatedPaymentLinkRequired, total=False):
+    items: list[LinkItem]
+    customer_email: str
+    order_ref: str
+    buyer: LinkBuyer
 
 
 class CreatePortalLinkRequest(TypedDict, total=False):

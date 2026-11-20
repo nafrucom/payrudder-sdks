@@ -25,6 +25,7 @@ final class InvoiceLine implements Model
      * @param string|null $description
      * @param string|null $serviceFrom
      * @param string|null $serviceTo
+     * @param int|null $taxRateBps
      */
     public function __construct(
         public readonly ?int $lineNo = null,
@@ -36,6 +37,7 @@ final class InvoiceLine implements Model
         public readonly ?string $description = null,
         public readonly ?string $serviceFrom = null,
         public readonly ?string $serviceTo = null,
+        public readonly ?int $taxRateBps = null,
     ) {}
 
     /**
@@ -53,6 +55,7 @@ final class InvoiceLine implements Model
             description: Cast::string($data['description'] ?? null),
             serviceFrom: Cast::string($data['service_from'] ?? null),
             serviceTo: Cast::string($data['service_to'] ?? null),
+            taxRateBps: Cast::int($data['tax_rate_bps'] ?? null),
         );
     }
 
@@ -71,6 +74,7 @@ final class InvoiceLine implements Model
             'description' => $this->description,
             'service_from' => $this->serviceFrom,
             'service_to' => $this->serviceTo,
+            'tax_rate_bps' => $this->taxRateBps,
         ]);
     }
 }

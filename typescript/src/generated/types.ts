@@ -811,6 +811,13 @@ export interface CreatedPaymentLink {
   /** Invoices the link created (ad hoc) */
   use_count: number;
   idempotency_key: string;
+  /** kind adhoc: the order. Unit prices include VAT; the invoice has a line per item and the VAT per rate. A link with items is single-use and needs a buyer, a billing address and customer_external_id or customer_email */
+  items?: Array<LinkItem>;
+  /** kind adhoc: the buyer's e-mail; finds or makes the customer when customer_external_id is not given */
+  customer_email?: string;
+  /** kind adhoc: the shop's own reference for the order; goes to the invoice, the webhook events and the return URL */
+  order_ref?: string;
+  buyer?: LinkBuyer;
   /** The secret part of the link; shown once, empty on a replay */
   token: string;
   /** Absolute when the deployment has a public address set; empty on a replay */
@@ -876,6 +883,14 @@ export interface CreatePaymentLinkRequest {
   /** Default 30 for adhoc, 90 for invoice */
   expires_in_days?: number;
   idempotency_key?: string;
+  /** kind adhoc: the order. Unit prices include VAT; the invoice has a line per item and the VAT per rate. A link with items is single-use and needs a buyer, a billing address and customer_external_id or customer_email */
+  items?: Array<LinkItem>;
+  /** kind adhoc: the buyer's e-mail; finds or makes the customer when customer_external_id is not given */
+  customer_email?: string;
+  /** kind adhoc: the shop's own reference for the order; goes to the invoice, the webhook events and the return URL */
+  order_ref?: string;
+  buyer?: LinkBuyer;
+  shipping_address?: AddressInput;
 }
 
 export interface CreatePaymentLinkRequestParams {
@@ -903,6 +918,14 @@ export interface CreatePaymentLinkRequestParams {
   /** Default 30 for adhoc, 90 for invoice */
   expires_in_days?: number;
   idempotency_key?: string;
+  /** kind adhoc: the order. Unit prices include VAT; the invoice has a line per item and the VAT per rate. A link with items is single-use and needs a buyer, a billing address and customer_external_id or customer_email */
+  items?: Array<LinkItemParams>;
+  /** kind adhoc: the buyer's e-mail; finds or makes the customer when customer_external_id is not given */
+  customer_email?: string;
+  /** kind adhoc: the shop's own reference for the order; goes to the invoice, the webhook events and the return URL */
+  order_ref?: string;
+  buyer?: LinkBuyer;
+  shipping_address?: AddressInput;
 }
 
 export interface CreatePaymentMethodSetupRequest {
@@ -1968,7 +1991,7 @@ export interface Invoice {
 
 export interface InvoiceLine {
   line_no: number;
-  kind: "BASE_FEE" | "USAGE" | "LATE_USAGE" | "CREDIT" | "CORRECTION" | "DISCOUNT" | "TAX";
+  kind: "BASE_FEE" | "USAGE" | "LATE_USAGE" | "CREDIT" | "CORRECTION" | "DISCOUNT" | "TAX" | "ITEM";
   meter_code: string;
   origin_period_id: string;
   quantity: string;
@@ -1977,6 +2000,8 @@ export interface InvoiceLine {
   /** The service period the line covers, nullable: true */
   service_from: string;
   service_to: string | null;
+  /** ITEM lines and the TAX line of each rate of an order: the VAT rate in basis points (2000 is 20 %); 0 or absent for other lines */
+  tax_rate_bps?: number;
 }
 
 export interface InvoicePayment {
@@ -2004,6 +2029,43 @@ export interface InvoiceSaga {
 
 export interface LinkAffiliatePromotionCodeRequest {
   promotion_code: string;
+}
+
+/** Who the invoice is made out to when the link has items. 400 billing.link.buyer_required when a field below is missing or malformed */
+export interface LinkBuyer {
+  /** Required with items */
+  name?: string;
+  /** A 10-digit VKN or an 11-digit TCKN; empty for a consumer without one (a buyer in Turkey is then invoiced as 11111111111) */
+  tax_id?: string;
+  billing_address?: AddressInput;
+}
+
+export interface LinkItem {
+  /** The seller's own reference for the item (a SKU); optional */
+  ref?: string;
+  name: string;
+  /** int64 as a string (a number is accepted in a request) */
+  quantity: Int64;
+  /** Price of one, VAT included, minor units; int64 as a string */
+  unit_amount_minor: Int64;
+  /** 2000 is 20 %. 0 (no VAT) is not supported */
+  vat_rate_bps: number;
+  /** A physical item needs a shipping address on the link */
+  physical?: boolean;
+}
+
+export interface LinkItemParams {
+  /** The seller's own reference for the item (a SKU); optional */
+  ref?: string;
+  name: string;
+  /** int64 as a string (a number is accepted in a request) */
+  quantity: Int64Input;
+  /** Price of one, VAT included, minor units; int64 as a string */
+  unit_amount_minor: Int64Input;
+  /** 2000 is 20 %. 0 (no VAT) is not supported */
+  vat_rate_bps: number;
+  /** A physical item needs a shipping address on the link */
+  physical?: boolean;
 }
 
 export interface ListAffiliateCommissionsQuery {
@@ -2600,6 +2662,13 @@ export interface PaymentLink {
   /** Invoices the link created (ad hoc) */
   use_count: number;
   idempotency_key: string;
+  /** kind adhoc: the order. Unit prices include VAT; the invoice has a line per item and the VAT per rate. A link with items is single-use and needs a buyer, a billing address and customer_external_id or customer_email */
+  items?: Array<LinkItem>;
+  /** kind adhoc: the buyer's e-mail; finds or makes the customer when customer_external_id is not given */
+  customer_email?: string;
+  /** kind adhoc: the shop's own reference for the order; goes to the invoice, the webhook events and the return URL */
+  order_ref?: string;
+  buyer?: LinkBuyer;
 }
 
 export interface PaymentMethodSetup {

@@ -39,6 +39,10 @@ final class PaymentLink implements Model
      * @param string|null $lastPaidTime
      * @param int|null $useCount
      * @param string|null $idempotencyKey
+     * @param list<LinkItem>|null $items
+     * @param string|null $customerEmail
+     * @param string|null $orderRef
+     * @param LinkBuyer|null $buyer
      */
     public function __construct(
         public readonly ?string $id = null,
@@ -62,6 +66,10 @@ final class PaymentLink implements Model
         public readonly ?string $lastPaidTime = null,
         public readonly ?int $useCount = null,
         public readonly ?string $idempotencyKey = null,
+        public readonly ?array $items = null,
+        public readonly ?string $customerEmail = null,
+        public readonly ?string $orderRef = null,
+        public readonly ?LinkBuyer $buyer = null,
     ) {}
 
     /**
@@ -91,6 +99,10 @@ final class PaymentLink implements Model
             lastPaidTime: Cast::string($data['last_paid_time'] ?? null),
             useCount: Cast::int($data['use_count'] ?? null),
             idempotencyKey: Cast::string($data['idempotency_key'] ?? null),
+            items: Cast::models(LinkItem::class, $data['items'] ?? null),
+            customerEmail: Cast::string($data['customer_email'] ?? null),
+            orderRef: Cast::string($data['order_ref'] ?? null),
+            buyer: Cast::model(LinkBuyer::class, $data['buyer'] ?? null),
         );
     }
 
@@ -121,6 +133,10 @@ final class PaymentLink implements Model
             'last_paid_time' => $this->lastPaidTime,
             'use_count' => $this->useCount,
             'idempotency_key' => $this->idempotencyKey,
+            'items' => Cast::wire($this->items),
+            'customer_email' => $this->customerEmail,
+            'order_ref' => $this->orderRef,
+            'buyer' => Cast::wire($this->buyer),
         ]);
     }
 }

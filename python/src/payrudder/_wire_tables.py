@@ -123,6 +123,7 @@ MODELS: dict[str, dict[str, Any]] = {
     },
     'CreatePaymentLinkRequest': {
         'amount_minor': ('int',),
+        'items': ('list', ('model', 'LinkItem')),
     },
     'CreatePromotionCodes': {
         'template': ('model', 'PromotionCodeInput'),
@@ -133,6 +134,7 @@ MODELS: dict[str, dict[str, Any]] = {
     'CreatedPaymentLink': {
         'credits': ('int',),
         'amount_minor': ('int',),
+        'items': ('list', ('model', 'LinkItem')),
     },
     'CreditBalance': {
         'balance': ('int',),
@@ -289,6 +291,10 @@ MODELS: dict[str, dict[str, Any]] = {
     'InvoicePayment': {
         'amount_minor': ('int',),
     },
+    'LinkItem': {
+        'quantity': ('int',),
+        'unit_amount_minor': ('int',),
+    },
     'ListAffiliateCommissionsResponse': {
         'commissions': ('list', ('model', 'AffiliateCommission')),
     },
@@ -346,6 +352,7 @@ MODELS: dict[str, dict[str, Any]] = {
     'PaymentLink': {
         'credits': ('int',),
         'amount_minor': ('int',),
+        'items': ('list', ('model', 'LinkItem')),
     },
     'PlanVersion': {
         'base_fee_minor': ('int',),

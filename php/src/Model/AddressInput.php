@@ -6,13 +6,13 @@ declare(strict_types=1);
 
 namespace Payrudder\Model;
 
-use Payrudder\Contract\RequestBody;
+use Payrudder\Contract\Model;
 use Payrudder\Internal\Cast;
 
 /**
  * A postal address as printed on an invoice. Every part is optional.
  */
-final class AddressInput implements RequestBody
+final class AddressInput implements Model
 {
     /**
      * @param string|null $line1
@@ -30,6 +30,21 @@ final class AddressInput implements RequestBody
         public readonly ?string $postalCode = null,
         public readonly ?string $country = null,
     ) {}
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    public static function fromArray(array $data): static
+    {
+        return new static(
+            line1: Cast::string($data['line1'] ?? null),
+            line2: Cast::string($data['line2'] ?? null),
+            city: Cast::string($data['city'] ?? null),
+            region: Cast::string($data['region'] ?? null),
+            postalCode: Cast::string($data['postal_code'] ?? null),
+            country: Cast::string($data['country'] ?? null),
+        );
+    }
 
     /**
      * @return array<string,mixed>

@@ -30,6 +30,11 @@ final class CreatePaymentLinkRequest implements RequestBody
      * @param list<CreatePaymentLinkRequestRequiredContractsItem|string>|null $requiredContracts
      * @param int|null $expiresInDays
      * @param string|null $idempotencyKey
+     * @param list<LinkItem>|null $items
+     * @param string|null $customerEmail
+     * @param string|null $orderRef
+     * @param LinkBuyer|null $buyer
+     * @param AddressInput|null $shippingAddress
      */
     public function __construct(
         public readonly CreatePaymentLinkRequestKind|string|null $kind = null,
@@ -45,6 +50,11 @@ final class CreatePaymentLinkRequest implements RequestBody
         public readonly ?array $requiredContracts = null,
         public readonly ?int $expiresInDays = null,
         public readonly ?string $idempotencyKey = null,
+        public readonly ?array $items = null,
+        public readonly ?string $customerEmail = null,
+        public readonly ?string $orderRef = null,
+        public readonly ?LinkBuyer $buyer = null,
+        public readonly ?AddressInput $shippingAddress = null,
     ) {}
 
     /**
@@ -66,6 +76,11 @@ final class CreatePaymentLinkRequest implements RequestBody
             'required_contracts' => Cast::wire($this->requiredContracts),
             'expires_in_days' => $this->expiresInDays,
             'idempotency_key' => $this->idempotencyKey,
+            'items' => Cast::wire($this->items),
+            'customer_email' => $this->customerEmail,
+            'order_ref' => $this->orderRef,
+            'buyer' => Cast::wire($this->buyer),
+            'shipping_address' => Cast::wire($this->shippingAddress),
         ]);
     }
 }
