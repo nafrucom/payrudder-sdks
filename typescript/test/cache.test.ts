@@ -59,7 +59,7 @@ describe("PayrudderCache", () => {
     expect((await cache.entitlement("cus", "api")).used).toBe("9");
     expect((await cache.entitlement("other", "api")).used).toBe("8");
     expect(await cache.handleWebhook({ type: "entitlement.updated", data: { customer_external_id: "cus", meter_code: "" } })).toBe(true);
-    expect(await cache.handleWebhook({ type: "invoice.paid", data: { customer_external_id: "cus" } })).toBe(false);
+    expect(await cache.handleWebhook({ type: "invoice.paid", data: { customer_external_id: "cus" } })).toBe(true);
     expect(await cache.handleWebhook({ type: "customer.blocked", data: {} })).toBe(false);
     calls.length = 0;
     await cache.catalog();

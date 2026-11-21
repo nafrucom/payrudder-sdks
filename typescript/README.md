@@ -26,14 +26,17 @@ const payrudder = new Payrudder({
   baseUrl: "http://localhost:42800", // default; PAYRUDDER_BASE_URL is read when not given
 });
 
-await payrudder.customers.createCustomer({ external_id: "cus_42", name: "Ada", email: "ada@example.com" });
+// Your "billing" endpoint: the customer is created or brought up to date by your own user id, then sent to their page.
+const { url } = await payrudder.connect({ id: user.id, name: user.name, email: user.email });
 
-const results = await payrudder.events.ingest([
-  { customer_external_id: "cus_42", meter_code: "ai_tokens", quantity: "1500", event_time: new Date() },
-]);
+// Your middleware: subscription, payment and the limit in one check.
+const access = await payrudder.access(user.id, "api_calls");
+if (!access.allowed) return new Response(access.reason, { status: 402 });
 
-const usage = await payrudder.customers.getCustomerUsage("cus_42", { period: "2026-11" });
+await payrudder.recordUsage({ customer_external_id: user.id, meter_code: "api_calls", quantity: "1", event_time: new Date() });
 ```
+
+The customer chooses a plan, pays and cancels on the page `url` opens; your code never manages a subscription. See [Connecting customers and checking access](#connecting-customers-and-checking-access) for organisations, caching and the notices to show in your app.
 
 Every operation of `api/openapi/v1.yaml` under `/v1/*` is one method, named exactly like its `operationId`, on the namespace of the first path segment (`/v1/credit-notes/...` is `payrudder.creditNotes`, `/v1/e-invoices/...` is `payrudder.eInvoices`). Arguments are, in order: the path parameters, the request body, the query object, then call options.
 
@@ -55,6 +58,7 @@ Request and response models are exported as types (`Customer`, `Invoice`, `Creat
 | `maxRetries` | `2` | automatic retries after the first attempt |
 | `fetch` | global `fetch` | inject your own (tests, proxies) |
 | `userAgent` | `payrudder-typescript/0.0.0` | browsers ignore it |
+| `cache` | none | `PayrudderCache` options; `access`, `recordUsage` and `handleWebhook` then go through it |
 
 Per call, the last argument accepts `{ idempotencyKey, timeout, maxRetries, signal, headers }`.
 
@@ -84,9 +88,47 @@ for (const [i, r] of results.entries()) {
 
 If you need to re-submit an input after a crash, give your own `idempotency_key`s: a repeat then comes back as `duplicate` and is not counted twice. The raw one-request operation is still available as `events.ingestEvents({ events })`.
 
-## Checking a limit on every request
+## Connecting customers and checking access
 
-`customers.getEntitlement(customer, meter)` is one request to the API. In a middleware that runs on every request of your app, use `EntitlementCache`: it keeps the answers in your own process, so a check costs a request only when nothing fresh is cached.
+`connect` creates the customer by your own id, or updates its name, e-mail and language when they changed, and returns the link to its customer page (valid for a day: ask for one at every visit). With `plan`, the page opens with that plan chosen, for a customer who picked it on your own pricing page.
+
+```ts
+// An organisation: your organisation id, and the signed-in person as the member. The first member manages payment.
+const { url, billing_owner } = await payrudder.connect({ id: org.id, name: org.name, member: { id: user.id, name: user.name, email: user.email } });
+if (!billing_owner) showMessage("Your organisation's billing owner manages payment."); // url is null for the other members
+```
+
+`access(customer, meters?, { member? })` answers whether the customer may use the service now: `allowed`, the `reason` that decided (`ok`, `trialing`, `past_due`, or `no_subscription`, `awaiting_payment`, `unpaid`, `limit_reached`, ...), the subscription and the meters asked for. For an organisation, ask with the organisation id: every member gets the same answer.
+
+`notices` is what to show the customer, ready for a banner, most serious first:
+
+```ts
+for (const n of access.notices) banner(n.severity, n.code, n.meter_code, n.at); // e.g. limit_near on api_calls, trial_ending at 2026-11-28
+```
+
+| `code` | `severity` | |
+|---|---|---|
+| `suspended` | critical | you suspended the customer's service |
+| `payment_required` | critical | the first payment is not made, or an invoice became uncollectible |
+| `payment_overdue` | warning | a renewal is being retried |
+| `trial_ending` | info | the trial ends within 7 days (`at`) |
+| `subscription_ending` | info | cancelled at the end of the paid period (`at` when known) |
+| `limit_reached` | critical | a hard limit of `meter_code` is reached |
+| `limit_exceeded` | warning | a soft or notify limit of `meter_code` is passed |
+| `limit_near` | warning | 80 % of the limit of `meter_code` is used |
+
+Without a cache every `access` asks the API. To answer most checks from a store, give the client a cache: the options are those of `PayrudderCache` below, plus `accessTtlMs` (default 5 s).
+
+```ts
+const payrudder = new Payrudder({ apiKey, cache: { store: new RedisStore(redis) } });
+await payrudder.access(user.id, ["api_calls", "seats"]);   // the meters' order does not matter
+await payrudder.recordUsage(event);                         // counted into the cached answers: a hard limit holds without a refetch
+await payrudder.handleWebhook(await constructEvent(rawBody, signature, secret)); // a paid invoice or a plan change shows at once
+```
+
+## Checking a limit on every request (deprecated)
+
+`EntitlementCache` is deprecated: use `access` with the client's `cache` option above. `customers.getEntitlement(customer, meter)` is one request to the API. In a middleware that runs on every request of your app, `EntitlementCache` keeps the answers in your own process, so a check costs a request only when nothing fresh is cached.
 
 ```ts
 import { EntitlementCache } from "@payrudder/sdk";

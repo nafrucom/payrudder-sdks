@@ -1,6 +1,6 @@
 # PHP examples
 
-Four small scripts: [send a usage event](send_usage.php), [create a customer](create_customer.php), [list invoices](list_invoices.php) and [verify a webhook](verify_webhook.php).
+Five small scripts: [connect a customer and check access](connect_and_check.php), [send a usage event](send_usage.php), [create a customer](create_customer.php), [list invoices](list_invoices.php) and [verify a webhook](verify_webhook.php).
 
 Nothing is published: require the SDK from this checkout as the [SDK's README](../README.md#install) shows (or run `composer install` here), then
 

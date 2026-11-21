@@ -1,6 +1,6 @@
 # TypeScript examples
 
-Four small programs: [send a usage event](send-usage.ts), [create a customer](create-customer.ts), [list invoices](list-invoices.ts) and [verify a webhook](verify-webhook.ts). They import `@payrudder/sdk`, as your own code will.
+Five small programs: [connect a customer and check access](connect-and-check.ts), [send a usage event](send-usage.ts), [create a customer](create-customer.ts), [list invoices](list-invoices.ts) and [verify a webhook](verify-webhook.ts). They import `@payrudder/sdk`, as your own code will.
 
 The SDK is not published: build it from this checkout and install the tarball in your project (see [Install](../README.md#install-from-the-repository)). Then copy an example in and run it, for example with [tsx](https://tsx.is) (`npx tsx send-usage.ts`):
 

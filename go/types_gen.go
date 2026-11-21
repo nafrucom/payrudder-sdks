@@ -16,6 +16,23 @@ var (
 	_ = url.PathEscape
 )
 
+// AccessNotice: suspended (critical): you suspended the service. payment_required (critical): the first payment
+// is not made, or an invoice became uncollectible. payment_overdue (warning): a renewal is being retried.
+// trial_ending (info): the trial ends within 7 days, `at` says when. subscription_ending (info): it is
+// cancelled at the end of the paid period, `at` says when when known. limit_reached (critical): a hard limit of
+// `meter_code` is reached. limit_exceeded (warning): a soft or notify limit is passed. limit_near (warning): 80
+// % of the limit is used.
+type AccessNotice struct {
+	// One of: suspended, payment_required, payment_overdue, trial_ending, subscription_ending, limit_reached,
+	// limit_exceeded, limit_near.
+	Code string `json:"code"`
+	// One of: info, warning, critical.
+	Severity string `json:"severity"`
+	// The meter, for a limit notice; empty otherwise
+	MeterCode string     `json:"meter_code"`
+	At        *time.Time `json:"at"`
+}
+
 // AddBlocklistEntryRequest is the request body of AddBlocklistEntry.
 type AddBlocklistEntryRequest struct {
 	// One of: email, tax_id, external_id.
@@ -509,6 +526,42 @@ type CompleteUploadFilePart struct {
 // CompleteUploadFileRequest is the request body of CompleteUploadFile.
 type CompleteUploadFileRequest struct {
 	Parts []CompleteUploadFilePart `json:"parts"`
+}
+
+// ConnectCustomerMember is an object of the API; see components.schemas.ConnectCustomerMember in
+// api/openapi/v1.yaml.
+type ConnectCustomerMember struct {
+	// Your own id of the person
+	ID   string `json:"id"`
+	Name string `json:"name,omitempty"`
+	// A plain e-mail address, or empty.
+	Email string `json:"email,omitempty"`
+}
+
+// ConnectCustomerRequest is the request body of ConnectCustomer.
+type ConnectCustomerRequest struct {
+	// The person's name, or the organisation's name when `member` is given
+	Name string `json:"name"`
+	// Required for a person. An organisation may leave it out: a new one takes its first member's e-mail.
+	Email string `json:"email,omitempty"`
+	// The language of the customer's mails and pages. One of: en, tr, de, fr, es, ar.
+	Locale string `json:"locale,omitempty"`
+	// The plan the customer page opens with when the customer has no running subscription
+	PlanCode      string                 `json:"plan_code,omitempty"`
+	Member        *ConnectCustomerMember `json:"member,omitempty"`
+	ExpiresInDays *int                   `json:"expires_in_days,omitempty"`
+}
+
+// ConnectCustomerResponse is the response of ConnectCustomer.
+type ConnectCustomerResponse struct {
+	// The customer page; null for a member who is not the billing owner
+	URL       *string    `json:"url"`
+	ExpiresAt *time.Time `json:"expires_at"`
+	Customer  Customer   `json:"customer"`
+	// The customer was created by this call
+	Created bool `json:"created"`
+	// The person manages payment: true for a person, and for the organisation's billing owner
+	BillingOwner bool `json:"billing_owner"`
 }
 
 // ContractAcceptance is an object of the API; see components.schemas.ContractAcceptance in api/openapi/v1.yaml.
@@ -1282,6 +1335,33 @@ type Customer struct {
 	// The customer has had a trial (a subscription that was ever trialing, cancelled ones included). Filled by GET
 	// /v1/customers/{external_id}; false in lists
 	TrialUsed bool `json:"trial_used"`
+}
+
+// CustomerAccess is an object of the API; see components.schemas.CustomerAccess in api/openapi/v1.yaml.
+type CustomerAccess struct {
+	CustomerExternalID string `json:"customer_external_id"`
+	Allowed            bool   `json:"allowed"`
+	// One of: ok, trialing, past_due, no_customer, not_member, suspended, no_subscription, cancelled, paused,
+	// unpaid, awaiting_payment, limit_reached.
+	Reason       string                      `json:"reason"`
+	Subscription *CustomerAccessSubscription `json:"subscription"`
+	// One per meter asked for, in the order asked
+	Meters []EntitlementStatus `json:"meters"`
+	// What to show the customer (a banner, a line on a usage page), most serious first; empty when there is nothing
+	// to say
+	Notices []AccessNotice `json:"notices"`
+}
+
+// CustomerAccessSubscription is an object of the API; see components.schemas.CustomerAccessSubscription in
+// api/openapi/v1.yaml.
+type CustomerAccessSubscription struct {
+	ID string `json:"id"`
+	// One of: SUBSCRIPTION_STATE_TRIALING, SUBSCRIPTION_STATE_ACTIVE, SUBSCRIPTION_STATE_PAST_DUE,
+	// SUBSCRIPTION_STATE_PAUSED, SUBSCRIPTION_STATE_CANCELLED.
+	State             string     `json:"state"`
+	PlanCode          string     `json:"plan_code"`
+	TrialEndsAt       *time.Time `json:"trial_ends_at"`
+	CancelAtPeriodEnd bool       `json:"cancel_at_period_end"`
 }
 
 // CustomerBlockAppeal is an object of the API; see components.schemas.CustomerBlockAppeal in
@@ -3902,6 +3982,28 @@ func (p *ListCustomersParams) values() url.Values {
 	}
 	if p.CreatedTo != nil {
 		v.Set("created_to", p.CreatedTo.UTC().Format(time.RFC3339Nano))
+	}
+	return v
+}
+
+// GetCustomerAccessParams are the query parameters of GetCustomerAccess.
+type GetCustomerAccessParams struct {
+	// Meter codes, comma-separated, at most 20
+	Meters string
+	// Your own id of the person; checks that they are a member of the customer
+	Member string
+}
+
+func (p *GetCustomerAccessParams) values() url.Values {
+	v := url.Values{}
+	if p == nil {
+		return v
+	}
+	if p.Meters != "" {
+		v.Set("meters", p.Meters)
+	}
+	if p.Member != "" {
+		v.Set("member", p.Member)
 	}
 	return v
 }

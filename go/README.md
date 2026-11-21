@@ -217,6 +217,40 @@ timestamps more than `tolerance` from the clock refused (`0` means five minutes)
 constants list the event type names; `InvoiceEventData`, `CreditNoteEventData`, `SubscriptionEventData`,
 `PaymentLinkEventData` and `CreditsEventData` type the payloads. Answer `2xx` within 10 seconds.
 
+## Connecting customers and checking access
+
+`connect` creates the customer by your own id, or updates its name, e-mail and language when they changed, and returns the link to its customer page (valid for a day: ask for one at every visit). The customer chooses a plan, pays and cancels there; your code never manages a subscription. With a plan, the page opens with that plan chosen. For an organisation, pass your organisation id and the signed-in person as the member: the first member manages payment, and the others get no link (`url` is null, `billing_owner` false).
+
+`access` answers whether the customer may use the service now: `allowed`, the `reason` that decided (`ok`, `trialing`, `past_due`, or `no_subscription`, `awaiting_payment`, `unpaid`, `limit_reached`, ...), the subscription and the meters asked for. For an organisation, ask with the organisation id: every member gets the same answer. `notices` is what to show the customer, ready for a banner, most serious first:
+
+```go
+client, _ := payrudder.New(payrudder.WithCache(payrudder.CacheOptions{})) // optional: answer most checks from a store
+
+session, err := client.Connect(ctx, payrudder.ConnectParams{ID: user.ID, Name: user.Name, Email: user.Email})
+// redirect to *session.URL
+
+access, err := client.Access(ctx, user.ID, []string{"api_calls"})
+if !access.Allowed {
+	http.Error(w, access.Reason, http.StatusPaymentRequired)
+}
+for _, n := range access.Notices {
+	banner(n.Severity, n.Code, n.MeterCode, n.At)
+}
+```
+
+| `code` | `severity` | |
+|---|---|---|
+| `suspended` | critical | you suspended the customer's service |
+| `payment_required` | critical | the first payment is not made, or an invoice became uncollectible |
+| `payment_overdue` | warning | a renewal is being retried |
+| `trial_ending` | info | the trial ends within 7 days (`at`) |
+| `subscription_ending` | info | cancelled at the end of the paid period (`at` when known) |
+| `limit_reached` | critical | a hard limit of `meter_code` is reached |
+| `limit_exceeded` | warning | a soft or notify limit of `meter_code` is passed |
+| `limit_near` | warning | 80 % of the limit of `meter_code` is used |
+
+With `WithCache`, `Access`, `RecordUsage` and `HandleWebhook` on the client go through the cache below (`AccessTTL` defaults to 5 s); `WithMember(userID)` also checks membership.
+
 ## Caching entitlements and the catalog
 
 `payrudder.NewCache` keeps entitlement checks and the catalog (plans with their current prices, active credit packs, running campaigns) in a store every instance of your app shares. The default is a `MemoryStore` in the process; for Redis, copy this go-redis adapter (the SDK does not import go-redis):

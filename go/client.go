@@ -59,6 +59,9 @@ type Client struct {
 	transport   http.RoundTripper
 	http        *http.Client
 
+	cacheOpts *CacheOptions
+	cache     *Cache
+
 	// sleep and jitter are replaced in tests.
 	sleep  func(ctx context.Context, d time.Duration) error
 	jitter func() float64
@@ -147,6 +150,9 @@ func New(opts ...Option) (*Client, error) {
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}
 	c.initServices(c)
+	if c.cacheOpts != nil {
+		c.cache = NewCache(c, *c.cacheOpts)
+	}
 	return c, nil
 }
 

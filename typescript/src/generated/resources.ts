@@ -28,6 +28,8 @@ import type {
   ChangeSubscriptionResponse,
   ClearInvoiceLogoResponse,
   CompleteUploadFileRequest,
+  ConnectCustomerRequest,
+  ConnectCustomerResponse,
   ContractSettings,
   ContractVersion,
   ContractWithdrawal,
@@ -67,6 +69,7 @@ import type {
   CreditSettings,
   CreditSettingsInputParams,
   Customer,
+  CustomerAccess,
   CustomerBlockAppeal,
   CustomerCards,
   CustomerContact,
@@ -97,6 +100,7 @@ import type {
   GetContractSnapshotResponse,
   GetContractStarterQuery,
   GetContractStarterResponse,
+  GetCustomerAccessQuery,
   GetCustomerUsageQuery,
   GetCustomerUsageResponse,
   GetDunningReportQuery,
@@ -1397,6 +1401,37 @@ export class CustomersResource {
    */
   attributeCustomer(externalId: string, body: AttributeCustomerRequest, options?: RequestOptions): Promise<AttributeCustomerResponse> {
     return this.t.request<AttributeCustomerResponse>({ method: "POST", path: `/v1/customers/${seg(externalId)}/referral`, body, bodyKind: "json", response: "json" }, options);
+  }
+
+  /**
+   * Connect a customer and get the link to their customer page
+   *
+   * The one call a sign-in needs. `external_id` is your own id of the customer: a person's user id, or for an organisation your organisation id with
+   * the signed-in user as `member`. The customer is created when it does not exist, and its name, e-mail and language are updated when they changed
+   * (unchanged values write nothing). A `member` is added or updated; the first member of an organisation becomes its billing owner and every member
+   * uses the service. The link to the customer page is made for the billing owner only (for anybody else `url` is null and `billing_owner` false); it
+   * works for `expires_in_days` (default 1). With `plan_code` and no running subscription, the page opens with that plan chosen. A new organisation
+   * without `email` takes its first member's e-mail as its billing contact.
+   *
+   * `PUT /v1/customers/{external_id}/session`
+   */
+  connectCustomer(externalId: string, body: ConnectCustomerRequest, options?: RequestOptions): Promise<ConnectCustomerResponse> {
+    return this.t.request<ConnectCustomerResponse>({ method: "PUT", path: `/v1/customers/${seg(externalId)}/session`, body, bodyKind: "json", response: "json" }, options);
+  }
+
+  /**
+   * Whether the customer may use the service now, by subscription, payment and limits
+   *
+   * One answer for a middleware: the customer's subscription, the meters asked for, `allowed` and the `reason` that decided. An unknown customer is
+   * 200 with `allowed` false and reason `no_customer`. `notices` lists what to show the customer, ready for a banner. Denied: `suspended` (you suspended the service), `no_subscription`, `cancelled`, `paused`,
+   * `unpaid` (an invoice became uncollectible), `awaiting_payment` (the first fee invoice is not paid yet, outside a trial), `limit_reached` (a meter asked
+   * for is at a hard limit; limits count in a trial too) and `not_member` (`member` given and not a member of the customer). Allowed: `ok`, `trialing`
+   * and `past_due` (a renewal is being retried; show a notice). For an organisation ask with the organisation id: every member gets the same answer.
+   *
+   * `GET /v1/customers/{external_id}/access`
+   */
+  getCustomerAccess(externalId: string, query?: GetCustomerAccessQuery, options?: RequestOptions): Promise<CustomerAccess> {
+    return this.t.request<CustomerAccess>({ method: "GET", path: `/v1/customers/${seg(externalId)}/access`, query, response: "json" }, options);
   }
 
   /**

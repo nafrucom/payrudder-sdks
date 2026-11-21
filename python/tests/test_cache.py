@@ -92,7 +92,7 @@ def test_webhooks_invalidate_customer_and_catalog() -> None:
     assert cache.handle_webhook(
         {"type": "entitlement.updated", "data": {"customer_external_id": "cus", "meter_code": ""}}
     )
-    assert not cache.handle_webhook({"type": "invoice.paid", "data": {"customer_external_id": "cus"}})
+    assert cache.handle_webhook({"type": "invoice.paid", "data": {"customer_external_id": "cus"}})
     assert not cache.handle_webhook({"type": "customer.blocked", "data": {}})
     cache.catalog()
     assert api.calls.count("plans") == 1

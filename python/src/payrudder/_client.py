@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from types import TracebackType
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
 from . import _core
+from . import models as m
+from .cache import PayrudderCache
 from .resources import AsyncResources, Resources
 from .types import RequestOptions
 
@@ -28,6 +30,8 @@ class Payrudder(Resources):
         max_retries: automatic retries for network errors, 429, 502/503/504 and (idempotent calls) 500. Default 2.
         http_client: your own ``httpx.Client`` (not closed by this client). Mutually exclusive with ``transport``.
         transport: an ``httpx.BaseTransport`` (for tests, proxies, mTLS) used to build the internal client.
+        cache: the options of a ``PayrudderCache`` (``store``, ``access_ttl_ms``, ...); with it, ``access``,
+            ``record_usage`` and ``handle_webhook`` go through the cache. ``{}`` is an in-memory cache.
     """
 
     def __init__(
@@ -41,6 +45,7 @@ class Payrudder(Resources):
         default_headers: Mapping[str, str] | None = None,
         http_client: httpx.Client | None = None,
         transport: httpx.BaseTransport | None = None,
+        cache: Mapping[str, Any] | None = None,
     ) -> None:
         if http_client is not None and transport is not None:
             raise ValueError("pass http_client or transport, not both")
@@ -49,6 +54,40 @@ class Payrudder(Resources):
         self._http = http_client or httpx.Client(transport=transport)
         self._sleep: Callable[[float], None] = time.sleep
         self._init_resources(self)
+        self.cache: PayrudderCache | None = PayrudderCache(self, **cache) if cache is not None else None
+
+    def connect(
+        self,
+        *,
+        id: str,  # noqa: A002 - your own id of the customer, as the API names it
+        name: str,
+        email: str | None = None,
+        locale: str | None = None,
+        plan: str | None = None,
+        member: Mapping[str, str] | None = None,
+        expires_in_days: int | None = None,
+    ) -> m.ConnectCustomerResponse:
+        """Create or update the customer and return the link to their customer page (``url`` is None for a member who
+        does not manage payment)."""
+        return self.customers.connect_customer(id, _connect_body(name, email, locale, plan, member, expires_in_days))
+
+    def access(self, customer: str, meters: str | Sequence[str] = (), *, member: str | None = None) -> m.CustomerAccess:
+        """Whether the customer may use the service now, by subscription, payment and the meters given. Cached when
+        the client has a cache."""
+        listed = [meters] if isinstance(meters, str) else list(meters)
+        if self.cache is not None:
+            return self.cache.access(customer, listed, member)
+        return self.customers.get_customer_access(customer, meters=",".join(listed) or None, member=member)
+
+    def record_usage(self, event: m.IncomingEvent) -> m.EventResult:
+        """Record one usage event; with a cache, count it into the cached answers too."""
+        if self.cache is not None:
+            return self.cache.record_usage(event)
+        return self.events.ingest([event])[0]
+
+    def handle_webhook(self, event: Mapping[str, Any]) -> bool:
+        """Invalidate cached answers for a verified webhook event; False without a cache."""
+        return self.cache.handle_webhook(event) if self.cache is not None else False
 
     @property
     def base_url(self) -> str:
@@ -143,6 +182,30 @@ class AsyncPayrudder(AsyncResources):
         self._sleep: Callable[[float], Awaitable[None]] = asyncio.sleep
         self._init_resources(self)
 
+    async def connect(
+        self,
+        *,
+        id: str,  # noqa: A002 - your own id of the customer, as the API names it
+        name: str,
+        email: str | None = None,
+        locale: str | None = None,
+        plan: str | None = None,
+        member: Mapping[str, str] | None = None,
+        expires_in_days: int | None = None,
+    ) -> m.ConnectCustomerResponse:
+        """Create or update the customer and return the link to their customer page."""
+        return await self.customers.connect_customer(
+            id, _connect_body(name, email, locale, plan, member, expires_in_days)
+        )
+
+    async def access(
+        self, customer: str, meters: str | Sequence[str] = (), *, member: str | None = None
+    ) -> m.CustomerAccess:
+        """Whether the customer may use the service now, by subscription, payment and the meters given. Not cached:
+        ``PayrudderCache`` works with the sync client."""
+        listed = [meters] if isinstance(meters, str) else list(meters)
+        return await self.customers.get_customer_access(customer, meters=",".join(listed) or None, member=member)
+
     @property
     def base_url(self) -> str:
         return self._settings.base_url
@@ -211,3 +274,20 @@ class AsyncPayrudder(AsyncResources):
                 attempt += 1
                 continue
             raise error
+
+
+def _connect_body(
+    name: str,
+    email: str | None,
+    locale: str | None,
+    plan: str | None,
+    member: Mapping[str, str] | None,
+    expires_in_days: int | None,
+) -> m.ConnectCustomerRequest:
+    body: dict[str, Any] = {"name": name}
+    for k, v in (("email", email), ("locale", locale), ("plan_code", plan), ("expires_in_days", expires_in_days)):
+        if v is not None:
+            body[k] = v
+    if member is not None:
+        body["member"] = dict(member)
+    return cast("m.ConnectCustomerRequest", body)

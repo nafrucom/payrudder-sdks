@@ -5,6 +5,14 @@ The four SDKs and the command line share one version number and are released tog
 
 ## [Unreleased]
 
+### Added
+- `connect`: creates or updates a customer by your own id (an organisation with its signed-in member) and returns the link to its customer page.
+- `access`: subscription, payment and limits in one check, with `allowed`, `reason` and `notices` to show in your app.
+- The client's cache option: `access`, `record_usage`/`recordUsage` and `handle_webhook`/`handleWebhook` on the client go through a `PayrudderCache`, which gains `access` and an access TTL (default 5 s).
+
+### Changed
+- `PayrudderCache` also invalidates the customer on `invoice.paid`, `invoice.uncollectible` and `invoice.voided`.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added

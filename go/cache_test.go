@@ -136,8 +136,8 @@ func TestCacheWebhookInvalidation(t *testing.T) {
 	if !cache.HandleWebhook(ctx, ev(EventEntitlementUpdated, `{"customer_external_id":"cus","meter_code":""}`)) {
 		t.Fatal("entitlement.updated did nothing")
 	}
-	if cache.HandleWebhook(ctx, ev(EventInvoicePaid, `{"customer_external_id":"cus"}`)) || cache.HandleWebhook(ctx, ev(EventCustomerBlocked, `{}`)) {
-		t.Fatal("acted on an event it should ignore")
+	if !cache.HandleWebhook(ctx, ev(EventInvoicePaid, `{"customer_external_id":"cus"}`)) || cache.HandleWebhook(ctx, ev(EventCustomerBlocked, `{}`)) {
+		t.Fatal("invoice.paid did nothing, or acted on an event without a customer")
 	}
 	_, _ = cache.Catalog(ctx)
 	if n := api.count("GET /v1/plans"); n != 2 {

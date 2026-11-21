@@ -10,6 +10,7 @@ use Payrudder\Contract\RequestBody;
 use Payrudder\Enum\EventResultStatus;
 use Payrudder\Model\Campaign;
 use Payrudder\Model\CreditPack;
+use Payrudder\Model\CustomerAccess;
 use Payrudder\Model\EntitlementStatus;
 use Payrudder\Model\EventResult;
 use Payrudder\Model\Plan;
@@ -28,7 +29,7 @@ use Throwable;
  */
 final class PayrudderCache
 {
-    private const CUSTOMER_EVENTS = ['entitlement.updated', 'customer.blocked', 'customer.unblocked', 'credits.purchased'];
+    private const CUSTOMER_EVENTS = ['entitlement.updated', 'customer.blocked', 'customer.unblocked', 'credits.purchased', 'invoice.paid', 'invoice.uncollectible', 'invoice.voided'];
     private const CATALOG_EVENTS = ['plan.created', 'plan.version_published', 'campaign.started', 'campaign.ended'];
 
     private readonly CacheStore $store;
@@ -41,6 +42,7 @@ final class PayrudderCache
     /**
      * @param string $prefix the API key's environment follows it, so test and live never share entries
      * @param (Closure(Throwable): void)|null $onError called with every store error
+     * @param int $accessTtlMs how long an access() answer is served without asking again; short, so it stays close to live
      */
     public function __construct(
         private readonly Client $client,
@@ -49,10 +51,11 @@ final class PayrudderCache
         private readonly int $entitlementTtlMs = 60_000,
         private readonly int $catalogTtlMs = 600_000,
         ?Closure $onError = null,
+        private readonly int $accessTtlMs = 5_000,
     ) {
         $this->store = $store ?? new MemoryStore();
         $this->base = $prefix . $client->environment() . ':';
-        $this->genTtlMs = 2 * max($entitlementTtlMs, $catalogTtlMs);
+        $this->genTtlMs = 2 * max($entitlementTtlMs, $catalogTtlMs, $accessTtlMs);
         $this->onError = $onError ?? static function (Throwable $e): void {};
     }
 
@@ -84,6 +87,92 @@ final class PayrudderCache
         );
 
         return array_values(array_map(static fn(mixed $s): EntitlementStatus => EntitlementStatus::fromArray(self::map($s)), $wire));
+    }
+
+    /**
+     * Whether the customer may use the service now: subscription, payment and the meters given
+     * (their order does not matter). A member, when given, is also checked to be one of the customer.
+     *
+     * @param list<string> $meters
+     */
+    public function access(string $customer, array $meters = [], ?string $member = null): CustomerAccess
+    {
+        $sorted = array_values(array_unique($meters));
+        sort($sorted);
+        $joined = implode(',', $sorted);
+        $keyOf = static fn(string $g): string => "acc:{$customer}:{$g}:{$joined}:" . ($member ?? '');
+        $wire = $this->cached(
+            $this->customerGenKey($customer),
+            $keyOf,
+            $this->accessTtlMs,
+            fn(): array => $this->client->customers->getCustomerAccess($customer, $joined === '' ? null : $joined, $member)->toArray(),
+        );
+        [$ok, $gen] = $this->read($this->customerGenKey($customer));
+        if ($ok && $gen !== null && $gen !== '') {
+            $this->remember($customer, $gen, $keyOf($gen));
+        }
+
+        return CustomerAccess::fromArray(self::map($wire));
+    }
+
+    /**
+     * The access answers cached under a generation are listed in one key, so recordUsage() can find
+     * the ones that hold a meter. shortcut: the last 50 keys only; a customer checked with more meter
+     * sets loses usage counting on the oldest until their TTL ends.
+     */
+    private function remember(string $customer, string $gen, string $key): void
+    {
+        $index = $this->base . "acc-keys:{$customer}:{$gen}";
+        [$ok, $raw] = $this->read($index);
+        $keys = $ok && $raw !== null ? self::decode($raw) : [];
+        $keys = \is_array($keys) ? array_values(array_filter($keys, 'is_string')) : [];
+        if (\in_array($key, $keys, true)) {
+            return;
+        }
+        $keys[] = $key;
+        $this->write($index, self::encode(\array_slice($keys, -50)), $this->accessTtlMs);
+    }
+
+    private function countIntoAccess(string $customer, string $gen, string $meter, string $quantity): void
+    {
+        [$ok, $raw] = $this->read($this->base . "acc-keys:{$customer}:{$gen}");
+        $keys = $ok && $raw !== null ? self::decode($raw) : null;
+        if (!\is_array($keys)) {
+            return;
+        }
+        foreach ($keys as $k) {
+            if (!\is_string($k)) {
+                continue;
+            }
+            $key = $this->base . $k;
+            [$ok, $hit] = $this->read($key);
+            $a = $ok && $hit !== null ? self::decode($hit) : null;
+            if (!\is_array($a) || !\is_array($a['meters'] ?? null)) {
+                continue;
+            }
+            foreach ($a['meters'] as $i => $s) {
+                if (!\is_array($s) || ($s['meter_code'] ?? null) !== $meter) {
+                    continue;
+                }
+                if (!self::countUsage($s, $quantity)) {
+                    $this->remove($key);
+                    continue 2;
+                }
+                $a['meters'][$i] = $s;
+                if (($s['allowed'] ?? true) === false && ($s['mode'] ?? null) === 'hard' && ($s['suspended'] ?? false) !== true) {
+                    if (($a['allowed'] ?? false) === true) {
+                        $a['allowed'] = false;
+                        $a['reason'] = 'limit_reached';
+                    }
+                    // The notice the API would now give for this meter, in place of a limit_near one.
+                    $others = array_values(array_filter(\is_array($a['notices'] ?? null) ? $a['notices'] : [], static fn(mixed $n): bool => !\is_array($n) || ($n['meter_code'] ?? null) !== $meter));
+                    $others[] = ['code' => 'limit_reached', 'severity' => 'critical', 'meter_code' => $meter, 'at' => null];
+                    $a['notices'] = $others;
+                }
+                $this->write($key, self::encode($a), $this->accessTtlMs);
+                break;
+            }
+        }
     }
 
     /**
@@ -157,6 +246,7 @@ final class PayrudderCache
             }
         }
 
+        $this->countIntoAccess($customer, $gen, $meter, $quantity);
         $all = $this->base . "ents:{$customer}:{$gen}";
         [$ok, $raw] = $this->read($all);
         if ($ok && $raw !== null) {

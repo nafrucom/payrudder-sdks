@@ -1,6 +1,6 @@
 import type { EventsResource, IngestEvent } from "./events";
 import type { CampaignsResource, CreditPacksResource, CustomersResource, PlansResource } from "./generated/resources";
-import type { Campaign, CreditPack, EntitlementStatus, EventResult, Plan, PlanVersion } from "./generated/types";
+import type { Campaign, CreditPack, CustomerAccess, EntitlementStatus, EventResult, Plan, PlanVersion } from "./generated/types";
 
 /**
  * Where `PayrudderCache` keeps its entries: three methods, sync or async. `MemoryStore` (the default) and `RedisStore` ship with the SDK; anything
@@ -80,7 +80,7 @@ export class RedisStore implements CacheStore {
 /** The parts of the client `PayrudderCache` uses; a `Payrudder` fits. */
 export interface CacheClient {
   readonly environment: "test" | "live";
-  customers: Pick<CustomersResource, "getEntitlement" | "listEntitlements">;
+  customers: Pick<CustomersResource, "getEntitlement" | "listEntitlements" | "getCustomerAccess">;
   plans: Pick<PlansResource, "listPlans" | "getPlanVersion">;
   creditPacks: Pick<CreditPacksResource, "listCreditPacks">;
   campaigns: Pick<CampaignsResource, "listCampaigns">;
@@ -94,6 +94,8 @@ export interface PayrudderCacheOptions {
   prefix?: string;
   /** How long an entitlement answer is served without asking again. Default 60000. */
   entitlementTtlMs?: number;
+  /** How long an access answer is served without asking again. Default 5000: short, so a cached answer stays close to live. */
+  accessTtlMs?: number;
   /** How long the catalog is served without asking again. Default 600000. */
   catalogTtlMs?: number;
   /** Called with every store error; the call itself reads through to the API instead of failing. */
@@ -120,7 +122,7 @@ export interface CacheWebhookEvent {
   data?: unknown;
 }
 
-const CUSTOMER_EVENTS = new Set(["entitlement.updated", "customer.blocked", "customer.unblocked", "credits.purchased"]);
+const CUSTOMER_EVENTS = new Set(["entitlement.updated", "customer.blocked", "customer.unblocked", "credits.purchased", "invoice.paid", "invoice.uncollectible", "invoice.voided"]);
 const CATALOG_EVENTS = new Set(["plan.created", "plan.version_published", "campaign.started", "campaign.ended"]);
 
 /**
@@ -140,6 +142,7 @@ export class PayrudderCache {
   private readonly base: string;
   private readonly entTtl: number;
   private readonly catTtl: number;
+  private readonly accTtl: number;
   private readonly genTtl: number;
   private readonly onError: (err: unknown) => void;
   private readonly inflight = new Map<string, Promise<unknown>>();
@@ -152,7 +155,8 @@ export class PayrudderCache {
     this.base = (options.prefix ?? "payrudder:") + client.environment + ":";
     this.entTtl = options.entitlementTtlMs ?? 60_000;
     this.catTtl = options.catalogTtlMs ?? 600_000;
-    this.genTtl = 2 * Math.max(this.entTtl, this.catTtl);
+    this.accTtl = options.accessTtlMs ?? 5_000;
+    this.genTtl = 2 * Math.max(this.entTtl, this.catTtl, this.accTtl);
     this.onError = options.onError ?? (() => undefined);
   }
 
@@ -168,6 +172,18 @@ export class PayrudderCache {
     return this.cached(this.customerGen(customer), (g) => `ents:${customer}:${g}`, this.entTtl, async () =>
       (await this.client.customers.listEntitlements(customer)).items,
     );
+  }
+
+  /** Whether the customer may use the service now: subscription, payment and the meters asked for. The meters' order does not matter. */
+  async access(customer: string, meters: readonly string[] = [], member?: string): Promise<CustomerAccess> {
+    const sorted = [...new Set(meters)].sort();
+    const keyOf = (g: string) => `acc:${customer}:${g}:${sorted.join(",")}:${member ?? ""}`;
+    const gen = await this.customerGen(customer);
+    const answer = await this.cached(Promise.resolve(gen), keyOf, this.accTtl, () =>
+      this.client.customers.getCustomerAccess(customer, { meters: sorted.length ? sorted.join(",") : undefined, member }),
+    );
+    if (gen) await this.remember(customer, gen, keyOf(gen));
+    return answer;
   }
 
   /** Plans with their current prices, active credit packs and running campaigns. */
@@ -214,7 +230,45 @@ export class PayrudderCache {
         await this.remove(all);
       }
     }
+    await this.countIntoAccess(customer, gen, event.meter_code, quantity);
     return result;
+  }
+
+  // The access answers cached under a generation are listed under one key, so recordUsage can find the ones that hold the meter.
+  private async remember(customer: string, gen: string, key: string): Promise<void> {
+    const index = this.base + `acc-keys:${customer}:${gen}`;
+    const raw = await this.read(index);
+    const keys = (raw && (parse(raw) as string[] | undefined)) || [];
+    if (!keys.includes(key)) await this.write(index, JSON.stringify([...keys, key].slice(-50)), this.accTtl);
+  }
+
+  private async countIntoAccess(customer: string, gen: string, meter: string, quantity: string): Promise<void> {
+    const raw = await this.read(this.base + `acc-keys:${customer}:${gen}`);
+    const keys = (raw && (parse(raw) as string[] | undefined)) || [];
+    for (const k of keys) {
+      const key = this.base + k;
+      const hit = await this.read(key);
+      const a = hit ? (parse(hit) as CustomerAccess | undefined) : undefined;
+      if (!a || !Array.isArray(a.meters)) continue;
+      const i = a.meters.findIndex((m) => m?.meter_code === meter);
+      if (i < 0) continue;
+      const next = countUsage(a.meters[i], quantity);
+      if (!next) {
+        await this.remove(key);
+        continue;
+      }
+      a.meters[i] = next;
+      if (!next.allowed && next.mode === "hard" && !next.suspended) {
+        if (a.allowed) {
+          a.allowed = false;
+          a.reason = "limit_reached";
+        }
+        // The notice the API would now give for this meter, in place of a limit_near one.
+        const others = (a.notices ?? []).filter((n) => n.meter_code !== meter);
+        a.notices = [...others, { code: "limit_reached", severity: "critical", meter_code: meter, at: null }];
+      }
+      await this.write(key, JSON.stringify(a), this.accTtl);
+    }
   }
 
   /** Invalidates by the event's type; returns whether it did anything. */

@@ -14,6 +14,8 @@ use Payrudder\Model\AddressInput;
 use Payrudder\Model\AttributeCustomerRequest;
 use Payrudder\Model\AttributeCustomerResponse;
 use Payrudder\Model\BlockCustomerRequest;
+use Payrudder\Model\ConnectCustomerRequest;
+use Payrudder\Model\ConnectCustomerResponse;
 use Payrudder\Model\ContractAcceptance;
 use Payrudder\Model\ContractWithdrawal;
 use Payrudder\Model\CreateContractWithdrawalRequest;
@@ -28,6 +30,7 @@ use Payrudder\Model\CreditLedgerEntry;
 use Payrudder\Model\CreditLedgerPage;
 use Payrudder\Model\CreditResult;
 use Payrudder\Model\Customer;
+use Payrudder\Model\CustomerAccess;
 use Payrudder\Model\CustomerBlockAppeal;
 use Payrudder\Model\CustomerCards;
 use Payrudder\Model\CustomerContact;
@@ -728,6 +731,35 @@ final class CustomersResource extends AbstractResource
     public function attributeCustomer(string $externalId, AttributeCustomerRequest|array $body, ?RequestOptions $options = null): AttributeCustomerResponse
     {
         return AttributeCustomerResponse::fromArray($this->call('POST', '/v1/customers/' . rawurlencode($externalId) . '/referral', [], Cast::body($body), $options));
+    }
+
+    /**
+     * Connect a customer and get the link to their customer page (PUT /v1/customers/{external_id}/session).
+     *
+     * @param string $externalId
+     * @param ConnectCustomerRequest|array<string,mixed> $body
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function connectCustomer(string $externalId, ConnectCustomerRequest|array $body, ?RequestOptions $options = null): ConnectCustomerResponse
+    {
+        return ConnectCustomerResponse::fromArray($this->call('PUT', '/v1/customers/' . rawurlencode($externalId) . '/session', [], Cast::body($body), $options));
+    }
+
+    /**
+     * Whether the customer may use the service now, by subscription, payment and limits (GET /v1/customers/{external_id}/access).
+     *
+     * @param string $externalId
+     * @param string|null $meters
+     * @param string|null $member
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function getCustomerAccess(string $externalId, ?string $meters = null, ?string $member = null, ?RequestOptions $options = null): CustomerAccess
+    {
+        return CustomerAccess::fromArray($this->call('GET', '/v1/customers/' . rawurlencode($externalId) . '/access', ['meters' => $meters, 'member' => $member], null, $options));
     }
 
     /**

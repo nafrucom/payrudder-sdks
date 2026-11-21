@@ -34,6 +34,9 @@ interface Entry {
  * const limits = new EntitlementCache(payrudder.customers, { ttlMs: 5_000 });
  * if (!(await limits.check("cus_42", "api_calls")).allowed) return new Response("Quota reached", { status: 429 });
  * ```
+ *
+ * @deprecated Give the client a cache instead: `new Payrudder({ apiKey, cache: {} })` and `payrudder.access(customer, meter)` check the subscription and the
+ * limits in one call, with a store your instances can share.
  */
 export class EntitlementCache {
   private readonly entries = new Map<string, Entry>();

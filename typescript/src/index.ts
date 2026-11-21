@@ -1,4 +1,5 @@
 export { Payrudder } from "./client";
+export type { ConnectInput } from "./client";
 export type { PayrudderOptions, RequestOptions } from "./transport";
 export {
   PayrudderError,

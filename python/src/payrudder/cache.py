@@ -11,7 +11,7 @@ import secrets
 import threading
 import time
 from collections import OrderedDict
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, TypeVar, cast
 
@@ -22,7 +22,15 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_CUSTOMER_EVENTS = {"entitlement.updated", "customer.blocked", "customer.unblocked", "credits.purchased"}
+_CUSTOMER_EVENTS = {
+    "entitlement.updated",
+    "customer.blocked",
+    "customer.unblocked",
+    "credits.purchased",
+    "invoice.paid",
+    "invoice.uncollectible",
+    "invoice.voided",
+}
 _CATALOG_EVENTS = {"plan.created", "plan.version_published", "campaign.started", "campaign.ended"}
 
 
@@ -114,6 +122,7 @@ class PayrudderCache:
         prefix: str = "payrudder:",
         entitlement_ttl_ms: int = 60_000,
         catalog_ttl_ms: int = 600_000,
+        access_ttl_ms: int = 5_000,
         on_error: Callable[[Exception], None] | None = None,
     ) -> None:
         self._client = client
@@ -121,7 +130,8 @@ class PayrudderCache:
         self._base = f"{prefix}{client.environment}:"
         self._ent_ttl = entitlement_ttl_ms
         self._cat_ttl = catalog_ttl_ms
-        self._gen_ttl = 2 * max(entitlement_ttl_ms, catalog_ttl_ms)
+        self._acc_ttl = access_ttl_ms
+        self._gen_ttl = 2 * max(entitlement_ttl_ms, catalog_ttl_ms, access_ttl_ms)
         self._on_error = on_error or (lambda _err: None)
 
     def entitlement(self, customer: str, meter: str) -> m.EntitlementStatus:
@@ -141,6 +151,67 @@ class PayrudderCache:
             self._ent_ttl,
             lambda: self._client.customers.list_entitlements(customer)["items"],
         )
+
+    def access(self, customer: str, meters: Sequence[str] = (), member: str | None = None) -> m.CustomerAccess:
+        """Whether the customer may use the service now: subscription, payment and the meters given (order does not
+        matter). ``member``, when given, is also checked to be a member of the customer."""
+        joined = ",".join(sorted(set(meters)))
+
+        def key_of(g: str) -> str:
+            return f"acc:{customer}:{g}:{joined}:{member or ''}"
+
+        answer = self._cached(
+            self._customer_gen_key(customer),
+            key_of,
+            self._acc_ttl,
+            lambda: self._client.customers.get_customer_access(customer, meters=joined or None, member=member),
+        )
+        ok, gen = self._get(self._customer_gen_key(customer))
+        if ok and gen:
+            self._remember(customer, gen, key_of(gen))
+        return answer
+
+    def _remember(self, customer: str, gen: str, key: str) -> None:
+        # shortcut: the last 50 access keys only; a customer checked with more meter sets loses usage counting on the
+        # oldest until their TTL ends.
+        index = self._base + f"acc-keys:{customer}:{gen}"
+        ok, raw = self._get(index)
+        keys = _parse(raw) if ok and raw else []
+        if not isinstance(keys, list):
+            keys = []
+        if key not in keys:
+            self._set(index, json.dumps([*keys, key][-50:]), self._acc_ttl)
+
+    def _count_into_access(self, customer: str, gen: str, meter: str, quantity: str) -> None:
+        ok, raw = self._get(self._base + f"acc-keys:{customer}:{gen}")
+        keys = _parse(raw) if ok and raw else None
+        if not isinstance(keys, list):
+            return
+        for k in keys:
+            key = self._base + str(k)
+            ok, hit = self._get(key)
+            answer = _parse(hit) if ok and hit else None
+            if not isinstance(answer, dict) or not isinstance(answer.get("meters"), list):
+                continue
+            match = [s for s in answer["meters"] if isinstance(s, dict) and s.get("meter_code") == meter]
+            if not match:
+                continue
+            if not _count_usage(match[0], quantity):
+                self._delete(key)
+                continue
+            s = match[0]
+            if not s.get("allowed") and s.get("mode") == "hard" and not s.get("suspended"):
+                if answer.get("allowed"):
+                    answer["allowed"], answer["reason"] = False, "limit_reached"
+                # The notice the API would now give for this meter, in place of a limit_near one.
+                others = [
+                    n for n in answer.get("notices") or [] if isinstance(n, dict) and n.get("meter_code") != meter
+                ]
+                answer["notices"] = [
+                    *others,
+                    {"code": "limit_reached", "severity": "critical", "meter_code": meter, "at": None},
+                ]
+            self._set(key, json.dumps(answer), self._acc_ttl)
 
     def catalog(self) -> Catalog:
         """Plans with their current prices, active credit packs and running campaigns."""
@@ -178,6 +249,7 @@ class PayrudderCache:
                 self._set(one, json.dumps(status), self._ent_ttl)
             else:
                 self._delete(one)
+        self._count_into_access(customer, gen, meter, quantity)
         every = self._base + f"ents:{customer}:{gen}"
         ok, raw = self._get(every)
         if ok and raw:

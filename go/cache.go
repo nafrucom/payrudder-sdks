@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"math/big"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -101,6 +102,8 @@ type CacheOptions struct {
 	// EntitlementTTL defaults to 60 s, CatalogTTL to 10 min: how long an answer is served without asking again.
 	EntitlementTTL time.Duration
 	CatalogTTL     time.Duration
+	// AccessTTL defaults to 5 s: short, so a cached Access answer stays close to live.
+	AccessTTL time.Duration
 	// OnError is called with every store error; the call itself reads through to the API instead of failing.
 	OnError func(error)
 }
@@ -130,6 +133,7 @@ type Cache struct {
 	store                  CacheStore
 	base                   string
 	entTTL, catTTL, genTTL time.Duration
+	accTTL                 time.Duration
 	onError                func(error)
 	mu                     sync.Mutex
 	inflight               map[string]*inflightCall
@@ -143,7 +147,7 @@ type inflightCall struct {
 
 // NewCache returns a Cache over the client.
 func NewCache(client *Client, opts CacheOptions) *Cache {
-	c := &Cache{client: client, store: opts.Store, entTTL: opts.EntitlementTTL, catTTL: opts.CatalogTTL, onError: opts.OnError, inflight: map[string]*inflightCall{}}
+	c := &Cache{client: client, store: opts.Store, entTTL: opts.EntitlementTTL, catTTL: opts.CatalogTTL, accTTL: opts.AccessTTL, onError: opts.OnError, inflight: map[string]*inflightCall{}}
 	if c.store == nil {
 		c.store = NewMemoryStore(0)
 	}
@@ -158,7 +162,10 @@ func NewCache(client *Client, opts CacheOptions) *Cache {
 	if c.catTTL <= 0 {
 		c.catTTL = 10 * time.Minute
 	}
-	c.genTTL = 2 * max(c.entTTL, c.catTTL)
+	if c.accTTL <= 0 {
+		c.accTTL = 5 * time.Second
+	}
+	c.genTTL = 2 * max(c.entTTL, c.catTTL, c.accTTL)
 	if c.onError == nil {
 		c.onError = func(error) {}
 	}
@@ -184,6 +191,83 @@ func (c *Cache) Entitlements(ctx context.Context, customer string) ([]Entitlemen
 			}
 			return res.Items, nil
 		})
+}
+
+// Access says whether the customer may use the service now: subscription, payment and the meters given (their order
+// does not matter). member, when not empty, is also checked to be a member of the customer.
+func (c *Cache) Access(ctx context.Context, customer string, meters []string, member string) (*CustomerAccess, error) {
+	sorted := slices.Compact(slices.Sorted(slices.Values(meters)))
+	keyOf := func(g string) string {
+		return "acc:" + customer + ":" + g + ":" + strings.Join(sorted, ",") + ":" + member
+	}
+	a, err := cached(ctx, c, c.customerGenKey(customer), keyOf, c.accTTL, func(ctx context.Context) (*CustomerAccess, error) {
+		return c.client.Customers.GetCustomerAccess(ctx, customer, &GetCustomerAccessParams{Meters: strings.Join(sorted, ","), Member: member})
+	})
+	if err == nil {
+		if gen, ok := c.get(ctx, c.customerGenKey(customer)); ok && gen != "" {
+			c.remember(ctx, customer, gen, keyOf(gen))
+		}
+	}
+	return a, err
+}
+
+// remember lists the access answers cached under a generation in one key, so RecordUsage can find those that hold a
+// meter. shortcut: the last 50 keys only; a customer checked with more meter sets loses counting on the oldest until
+// their TTL ends.
+func (c *Cache) remember(ctx context.Context, customer, gen, key string) {
+	index := c.base + "acc-keys:" + customer + ":" + gen
+	var keys []string
+	if raw, ok := c.get(ctx, index); ok && raw != "" {
+		_ = json.Unmarshal([]byte(raw), &keys)
+	}
+	if slices.Contains(keys, key) {
+		return
+	}
+	keys = append(keys, key)
+	if len(keys) > 50 {
+		keys = keys[len(keys)-50:]
+	}
+	c.setJSON(ctx, index, keys, c.accTTL)
+}
+
+func (c *Cache) countIntoAccess(ctx context.Context, customer, gen, meter, quantity string) {
+	raw, ok := c.get(ctx, c.base+"acc-keys:"+customer+":"+gen)
+	if !ok || raw == "" {
+		return
+	}
+	var keys []string
+	if json.Unmarshal([]byte(raw), &keys) != nil {
+		return
+	}
+	for _, k := range keys {
+		key := c.base + k
+		hit, ok := c.get(ctx, key)
+		if !ok || hit == "" {
+			continue
+		}
+		var a CustomerAccess
+		if json.Unmarshal([]byte(hit), &a) != nil {
+			c.del(ctx, key)
+			continue
+		}
+		i := slices.IndexFunc(a.Meters, func(m EntitlementStatus) bool { return m.MeterCode == meter })
+		if i < 0 {
+			continue
+		}
+		if !countUsage(&a.Meters[i], quantity) {
+			c.del(ctx, key)
+			continue
+		}
+		if s := a.Meters[i]; !s.Allowed && s.Mode == "hard" && !s.Suspended {
+			if a.Allowed {
+				a.Allowed, a.Reason = false, "limit_reached"
+			}
+			// The notice the API would now give for this meter, in place of a limit_near one.
+			a.Notices = slices.DeleteFunc(a.Notices, func(n AccessNotice) bool { return n.MeterCode == meter })
+			a.Notices = append(a.Notices, AccessNotice{Code: "limit_reached", Severity: "critical", MeterCode: meter})
+		}
+		c.setJSON(ctx, key, a, c.accTTL)
+	}
 }
 
 // Catalog is the plans with their current prices, the active credit packs and the running campaigns.
@@ -242,6 +326,7 @@ func (c *Cache) RecordUsage(ctx context.Context, ev IncomingEvent) (EventResult,
 			c.del(ctx, one)
 		}
 	}
+	c.countIntoAccess(ctx, ev.CustomerExternalID, gen, ev.MeterCode, q)
 	all := c.base + "ents:" + ev.CustomerExternalID + ":" + gen
 	if raw, ok := c.get(ctx, all); ok && raw != "" {
 		var items []EntitlementStatus
@@ -265,14 +350,15 @@ func (c *Cache) RecordUsage(ctx context.Context, ev IncomingEvent) (EventResult,
 }
 
 // HandleWebhook invalidates by the event's type (already verified, see ConstructEvent) and reports whether it did
-// anything: the customer on entitlement.updated, customer.blocked, customer.unblocked, credits.purchased and every
+// anything: the customer on entitlement.updated, customer.blocked, customer.unblocked, credits.purchased, invoice.paid,
+// invoice.uncollectible, invoice.voided and every
 // subscription.* event; the catalog on plan.created, plan.version_published, campaign.started and campaign.ended.
 func (c *Cache) HandleWebhook(ctx context.Context, ev *WebhookEvent) bool {
 	switch ev.Type {
 	case "plan.created", "plan.version_published", EventCampaignStarted, EventCampaignEnded:
 		c.InvalidateCatalog(ctx)
 		return true
-	case EventEntitlementUpdated, EventCustomerBlocked, EventCustomerUnblocked, EventCreditsPurchased:
+	case EventEntitlementUpdated, EventCustomerBlocked, EventCustomerUnblocked, EventCreditsPurchased, EventInvoicePaid, EventInvoiceUncollectible, EventInvoiceVoided:
 	default:
 		if !strings.HasPrefix(ev.Type, "subscription.") {
 			return false

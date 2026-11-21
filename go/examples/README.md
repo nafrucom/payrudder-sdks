@@ -1,6 +1,6 @@
 # Go examples
 
-Four small programs, one directory each: [send a usage event](send-usage/main.go), [create a customer](create-customer/main.go), [list invoices](list-invoices/main.go) and [verify a webhook](verify-webhook/main.go).
+Five small programs, one directory each: [connect a customer and check access](connect-and-check/main.go), [send a usage event](send-usage/main.go), [create a customer](create-customer/main.go), [list invoices](list-invoices/main.go) and [verify a webhook](verify-webhook/main.go).
 
 ```sh
 export PAYRUDDER_API_KEY=prk_test_...             # a sandbox key

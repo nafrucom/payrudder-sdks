@@ -3,6 +3,21 @@ import type { Int64, Int64Input } from "../int64";
 
 export type { Int64, Int64Input };
 
+/**
+ * suspended (critical): you suspended the service. payment_required (critical): the first payment is not made, or an invoice became uncollectible.
+ * payment_overdue (warning): a renewal is being retried. trial_ending (info): the trial ends within 7 days, `at` says when. subscription_ending (info): it is
+ * cancelled at the end of the paid period, `at` says when when known. limit_reached (critical): a hard limit of `meter_code` is reached. limit_exceeded (warning):
+ * a soft or notify limit is passed. limit_near (warning): 80 % of the limit is used.
+ *
+ */
+export interface AccessNotice {
+  code: "suspended" | "payment_required" | "payment_overdue" | "trial_ending" | "subscription_ending" | "limit_reached" | "limit_exceeded" | "limit_near";
+  severity: "info" | "warning" | "critical";
+  /** The meter, for a limit notice; empty otherwise */
+  meter_code: string;
+  at: string | null;
+}
+
 export interface AddBlocklistEntryRequest {
   kind: "email" | "tax_id" | "external_id";
   value: string;
@@ -485,6 +500,38 @@ export interface CompleteUploadFilePart {
 
 export interface CompleteUploadFileRequest {
   parts: Array<CompleteUploadFilePart>;
+}
+
+export interface ConnectCustomerMember {
+  /** Your own id of the person */
+  id: string;
+  name?: string;
+  /** A plain e-mail address, or empty. */
+  email?: string;
+}
+
+export interface ConnectCustomerRequest {
+  /** The person's name, or the organisation's name when `member` is given */
+  name: string;
+  /** Required for a person. An organisation may leave it out: a new one takes its first member's e-mail. */
+  email?: string;
+  /** The language of the customer's mails and pages */
+  locale?: "en" | "tr" | "de" | "fr" | "es" | "ar";
+  /** The plan the customer page opens with when the customer has no running subscription */
+  plan_code?: string;
+  member?: ConnectCustomerMember;
+  expires_in_days?: number;
+}
+
+export interface ConnectCustomerResponse {
+  /** The customer page; null for a member who is not the billing owner */
+  url: string | null;
+  expires_at: string | null;
+  customer: Customer;
+  /** The customer was created by this call */
+  created: boolean;
+  /** The person manages payment: true for a person, and for the organisation's billing owner */
+  billing_owner: boolean;
 }
 
 export interface ContractAcceptance {
@@ -1261,6 +1308,25 @@ export interface Customer {
   trial_used: boolean;
 }
 
+export interface CustomerAccess {
+  customer_external_id: string;
+  allowed: boolean;
+  reason: "ok" | "trialing" | "past_due" | "no_customer" | "not_member" | "suspended" | "no_subscription" | "cancelled" | "paused" | "unpaid" | "awaiting_payment" | "limit_reached";
+  subscription: CustomerAccessSubscription | null;
+  /** One per meter asked for, in the order asked */
+  meters: Array<EntitlementStatus>;
+  /** What to show the customer (a banner, a line on a usage page), most serious first; empty when there is nothing to say */
+  notices: Array<AccessNotice>;
+}
+
+export interface CustomerAccessSubscription {
+  id: string;
+  state: "SUBSCRIPTION_STATE_TRIALING" | "SUBSCRIPTION_STATE_ACTIVE" | "SUBSCRIPTION_STATE_PAST_DUE" | "SUBSCRIPTION_STATE_PAUSED" | "SUBSCRIPTION_STATE_CANCELLED";
+  plan_code: string;
+  trial_ends_at: string | null;
+  cancel_at_period_end: boolean;
+}
+
 export interface CustomerBlockAppeal {
   id: string;
   status: "open" | "accepted" | "rejected" | "closed";
@@ -1650,6 +1716,13 @@ export interface GetContractStarterQuery {
 export interface GetContractStarterResponse {
   body: string;
   locale: "tr" | "en";
+}
+
+export interface GetCustomerAccessQuery {
+  /** Meter codes, comma-separated, at most 20 */
+  meters?: string;
+  /** Your own id of the person; checks that they are a member of the customer */
+  member?: string;
 }
 
 export interface GetCustomerUsageQuery {

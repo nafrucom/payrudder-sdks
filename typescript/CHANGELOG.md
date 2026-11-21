@@ -5,6 +5,17 @@ The four SDKs share one version number and are released together.
 
 ## [Unreleased]
 
+### Added
+- `connect({ id, name, email, plan, member })`: creates or updates a customer by your own id (an organisation with its signed-in member) and returns the link to its customer page.
+- `access(customer, meters, { member })`: subscription, payment and limits in one check, with `allowed`, `reason` and `notices` to show in your app.
+- The `cache` client option: `access`, `recordUsage` and `handleWebhook` on the client go through a `PayrudderCache`, which gains `access` and `accessTtlMs`.
+
+### Changed
+- `PayrudderCache.handleWebhook` also invalidates the customer on `invoice.paid`, `invoice.uncollectible` and `invoice.voided`.
+
+### Deprecated
+- `EntitlementCache`: use `access` with the `cache` option.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added

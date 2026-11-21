@@ -2064,6 +2064,60 @@ class CreatedPaymentLink(_CreatedPaymentLinkRequired, total=False):
     buyer: LinkBuyer
 
 
+class _ConnectCustomerMemberRequired(TypedDict):
+    id: str
+
+
+class ConnectCustomerMember(_ConnectCustomerMemberRequired, total=False):
+    name: str
+    email: str
+
+
+class _ConnectCustomerRequestRequired(TypedDict):
+    name: str
+
+
+class ConnectCustomerRequest(_ConnectCustomerRequestRequired, total=False):
+    email: str
+    locale: Literal["en", "tr", "de", "fr", "es", "ar"]
+    plan_code: str
+    member: ConnectCustomerMember
+    expires_in_days: int
+
+
+class ConnectCustomerResponse(TypedDict):
+    url: str | None
+    expires_at: str | None
+    customer: Customer
+    created: bool
+    billing_owner: bool
+
+
+class CustomerAccessSubscription(TypedDict):
+    id: str
+    state: Literal["SUBSCRIPTION_STATE_TRIALING", "SUBSCRIPTION_STATE_ACTIVE", "SUBSCRIPTION_STATE_PAST_DUE", "SUBSCRIPTION_STATE_PAUSED", "SUBSCRIPTION_STATE_CANCELLED"]
+    plan_code: str
+    trial_ends_at: str | None
+    cancel_at_period_end: bool
+
+
+class AccessNotice(TypedDict):
+    """suspended (critical): you suspended the service. payment_required (critical): the first payment is not made, or an invoice became uncollectible. payment_overdue (warning): a renewal is being retried. trial_ending (info): the trial ends within 7 days, `at` says when. subscription_ending (info): it is cancelled at the end of the paid period, `at` says when when known. limit_reached (critical): a..."""
+    code: Literal["suspended", "payment_required", "payment_overdue", "trial_ending", "subscription_ending", "limit_reached", "limit_exceeded", "limit_near"]
+    severity: Literal["info", "warning", "critical"]
+    meter_code: str
+    at: str | None
+
+
+class CustomerAccess(TypedDict):
+    customer_external_id: str
+    allowed: bool
+    reason: Literal["ok", "trialing", "past_due", "no_customer", "not_member", "suspended", "no_subscription", "cancelled", "paused", "unpaid", "awaiting_payment", "limit_reached"]
+    subscription: CustomerAccessSubscription | None
+    meters: list[EntitlementStatus]
+    notices: list[AccessNotice]
+
+
 class CreatePortalLinkRequest(TypedDict, total=False):
     expires_in_days: int
     member_external_id: str

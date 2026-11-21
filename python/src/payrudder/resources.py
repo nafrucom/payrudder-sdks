@@ -377,6 +377,20 @@ class CustomersResource:
         """
         return cast("m.AttributeCustomerResponse", self._client._request("POST", f"/v1/customers/{_p(external_id)}/referral", body=body, options=options))
 
+    def connect_customer(self, external_id: str, body: m.ConnectCustomerRequest, *, options: RequestOptions | None = None) -> m.ConnectCustomerResponse:
+        """Connect a customer and get the link to their customer page.
+
+        ``PUT /v1/customers/{external_id}/session``
+        """
+        return cast("m.ConnectCustomerResponse", self._client._request("PUT", f"/v1/customers/{_p(external_id)}/session", body=body, options=options))
+
+    def get_customer_access(self, external_id: str, *, meters: str | None = None, member: str | None = None, options: RequestOptions | None = None) -> m.CustomerAccess:
+        """Whether the customer may use the service now, by subscription, payment and limits.
+
+        ``GET /v1/customers/{external_id}/access``
+        """
+        return cast("m.CustomerAccess", self._client._request("GET", f"/v1/customers/{_p(external_id)}/access", query={"meters": meters, "member": member}, options=options))
+
     def create_portal_link(self, external_id: str, body: m.CreatePortalLinkRequest | None = None, *, options: RequestOptions | None = None) -> m.CreatePortalLinkResponse:
         """Make the link to a customer's payment page.
 
@@ -2325,6 +2339,20 @@ class AsyncCustomersResource:
         ``POST /v1/customers/{external_id}/referral``
         """
         return cast("m.AttributeCustomerResponse", await self._client._request("POST", f"/v1/customers/{_p(external_id)}/referral", body=body, options=options))
+
+    async def connect_customer(self, external_id: str, body: m.ConnectCustomerRequest, *, options: RequestOptions | None = None) -> m.ConnectCustomerResponse:
+        """Connect a customer and get the link to their customer page.
+
+        ``PUT /v1/customers/{external_id}/session``
+        """
+        return cast("m.ConnectCustomerResponse", await self._client._request("PUT", f"/v1/customers/{_p(external_id)}/session", body=body, options=options))
+
+    async def get_customer_access(self, external_id: str, *, meters: str | None = None, member: str | None = None, options: RequestOptions | None = None) -> m.CustomerAccess:
+        """Whether the customer may use the service now, by subscription, payment and limits.
+
+        ``GET /v1/customers/{external_id}/access``
+        """
+        return cast("m.CustomerAccess", await self._client._request("GET", f"/v1/customers/{_p(external_id)}/access", query={"meters": meters, "member": member}, options=options))
 
     async def create_portal_link(self, external_id: str, body: m.CreatePortalLinkRequest | None = None, *, options: RequestOptions | None = None) -> m.CreatePortalLinkResponse:
         """Make the link to a customer's payment page.

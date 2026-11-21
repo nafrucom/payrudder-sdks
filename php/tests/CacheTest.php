@@ -97,7 +97,7 @@ final class CacheTest extends TestCase
         self::assertTrue($cache->handleWebhook(self::event('subscription.changed', ['subscription' => ['customer_external_id' => 'cus']])));
         self::assertSame('9', $cache->entitlement('cus', 'api')->used);
         self::assertTrue($cache->handleWebhook(self::event('entitlement.updated', ['customer_external_id' => 'cus', 'meter_code' => ''])));
-        self::assertFalse($cache->handleWebhook(self::event('invoice.paid', ['customer_external_id' => 'cus'])));
+        self::assertTrue($cache->handleWebhook(self::event('invoice.paid', ['customer_external_id' => 'cus'])));
         self::assertFalse($cache->handleWebhook(self::event('customer.blocked', [])));
         $cache->catalog();
         self::assertSame(1, $this->calls('GET /v1/plans'));

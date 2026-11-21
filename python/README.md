@@ -117,6 +117,38 @@ async for payout in client.affiliates.iter_affiliate_payouts():  # async client
     ...
 ```
 
+## Connecting customers and checking access
+
+`connect` creates the customer by your own id, or updates its name, e-mail and language when they changed, and returns the link to its customer page (valid for a day: ask for one at every visit). The customer chooses a plan, pays and cancels there; your code never manages a subscription. With a plan, the page opens with that plan chosen. For an organisation, pass your organisation id and the signed-in person as the member: the first member manages payment, and the others get no link (`url` is null, `billing_owner` false).
+
+`access` answers whether the customer may use the service now: `allowed`, the `reason` that decided (`ok`, `trialing`, `past_due`, or `no_subscription`, `awaiting_payment`, `unpaid`, `limit_reached`, ...), the subscription and the meters asked for. For an organisation, ask with the organisation id: every member gets the same answer. `notices` is what to show the customer, ready for a banner, most serious first:
+
+```python
+client = Payrudder(cache={})  # optional: answer most checks from a store, e.g. cache={"store": RedisStore(redis)}
+
+session = client.connect(id=user.id, name=user.name, email=user.email)
+# redirect to session["url"]
+
+access = client.access(user.id, "api_calls")
+if not access["allowed"]:
+    abort(402, access["reason"])
+for n in access["notices"]:
+    banner(n["severity"], n["code"], n["meter_code"], n["at"])
+```
+
+| `code` | `severity` | |
+|---|---|---|
+| `suspended` | critical | you suspended the customer's service |
+| `payment_required` | critical | the first payment is not made, or an invoice became uncollectible |
+| `payment_overdue` | warning | a renewal is being retried |
+| `trial_ending` | info | the trial ends within 7 days (`at`) |
+| `subscription_ending` | info | cancelled at the end of the paid period (`at` when known) |
+| `limit_reached` | critical | a hard limit of `meter_code` is reached |
+| `limit_exceeded` | warning | a soft or notify limit of `meter_code` is passed |
+| `limit_near` | warning | 80 % of the limit of `meter_code` is used |
+
+With `cache`, `access`, `record_usage` and `handle_webhook` on the client go through the cache below (`access_ttl_ms` defaults to 5000); `member=` also checks membership. `AsyncPayrudder` has `connect` and `access` without a cache.
+
 ## Caching entitlements and the catalog in Redis
 
 `PayrudderCache` keeps entitlement checks and the catalog (plans with their current prices, active credit packs, running campaigns) in a store every instance of your app shares. Pass the redis-py client you already have; without a store it uses a `MemoryStore` in the process. Forward verified webhooks to it, so a change in Payrudder invalidates the cached answers at once.

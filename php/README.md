@@ -197,6 +197,40 @@ http_response_code(200);
 `$event->dataAs(InvoiceEventData::class)` reads `data` as a typed object (`Payrudder\Webhook\Data`: `InvoiceEventData` for `invoice.*`, `CreditNoteEventData`, `SubscriptionEventData`, `PaymentLinkEventData`, `CreditsPurchasedEventData`, `CreditsLowEventData`); money fields are ints of minor units.
 `WebhookEventType::all()` lists the type names (and the `Payrudder\Enum\WebhookEventType` enum is what an endpoint's `event_types` accepts).
 
+## Connecting customers and checking access
+
+`connect` creates the customer by your own id, or updates its name, e-mail and language when they changed, and returns the link to its customer page (valid for a day: ask for one at every visit). The customer chooses a plan, pays and cancels there; your code never manages a subscription. With a plan, the page opens with that plan chosen. For an organisation, pass your organisation id and the signed-in person as the member: the first member manages payment, and the others get no link (`url` is null, `billing_owner` false).
+
+`access` answers whether the customer may use the service now: `allowed`, the `reason` that decided (`ok`, `trialing`, `past_due`, or `no_subscription`, `awaiting_payment`, `unpaid`, `limit_reached`, ...), the subscription and the meters asked for. For an organisation, ask with the organisation id: every member gets the same answer. `notices` is what to show the customer, ready for a banner, most serious first:
+
+```php
+$client = new Client(cache: []);   // optional: answer most checks from a store, e.g. cache: ['store' => new RedisStore($redis)]
+
+$session = $client->connect(['id' => $user->id, 'name' => $user->name, 'email' => $user->email]);
+// redirect to $session->url
+
+$access = $client->access($user->id, 'api_calls');
+if (!$access->allowed) {
+    http_response_code(402);
+}
+foreach ($access->notices ?? [] as $n) {
+    banner($n->severity, $n->code, $n->meterCode, $n->at);
+}
+```
+
+| `code` | `severity` | |
+|---|---|---|
+| `suspended` | critical | you suspended the customer's service |
+| `payment_required` | critical | the first payment is not made, or an invoice became uncollectible |
+| `payment_overdue` | warning | a renewal is being retried |
+| `trial_ending` | info | the trial ends within 7 days (`at`) |
+| `subscription_ending` | info | cancelled at the end of the paid period (`at` when known) |
+| `limit_reached` | critical | a hard limit of `meter_code` is reached |
+| `limit_exceeded` | warning | a soft or notify limit of `meter_code` is passed |
+| `limit_near` | warning | 80 % of the limit of `meter_code` is used |
+
+With `cache`, `access()`, `recordUsage()` and `handleWebhook()` on the client go through the cache below (`accessTtlMs` defaults to 5000); the third argument of `access()` also checks membership.
+
 ## Caching entitlements and the catalog in Redis
 
 `PayrudderCache` keeps entitlement checks and the catalog (plans with their current prices, active credit packs, running campaigns) in a store every PHP worker and server shares. Pass the Redis client you already have (Predis or phpredis); the default `MemoryStore` lives only as long as the PHP process, which under PHP-FPM is one request. Forward verified webhooks to it, so a change in Payrudder invalidates the cached answers at once.

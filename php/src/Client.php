@@ -5,12 +5,18 @@ declare(strict_types=1);
 namespace Payrudder;
 
 use Closure;
+use Payrudder\Cache\PayrudderCache;
+use Payrudder\Contract\RequestBody;
 use Payrudder\Exception\ConfigurationException;
 use Payrudder\Internal\Requester;
+use Payrudder\Model\ConnectCustomerResponse;
+use Payrudder\Model\CustomerAccess;
+use Payrudder\Model\EventResult;
 use Payrudder\Resource\Generated\ResourceHolder;
 use Payrudder\Transport\CurlTransport;
 use Payrudder\Transport\Psr18Transport;
 use Payrudder\Transport\TransportInterface;
+use Payrudder\Webhook\WebhookEvent;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -29,6 +35,8 @@ final class Client extends ResourceHolder
 
     private readonly string $environment;
 
+    private readonly ?PayrudderCache $cache;
+
     /**
      * @param string|null $apiKey `prk_test_...` or `prk_live_...`; defaults to $PAYRUDDER_API_KEY
      * @param string|null $baseUrl defaults to $PAYRUDDER_BASE_URL, then http://localhost:42800
@@ -38,6 +46,8 @@ final class Client extends ResourceHolder
      * @param TransportInterface|null $transport replaces the whole HTTP layer (tests, custom stacks)
      * @param ClientInterface|null $httpClient any PSR-18 client
      * @param Closure(float):void|null $sleeper how to wait between retries (seconds); defaults to usleep
+     * @param array<string,mixed>|null $cache PayrudderCache's named arguments (`store`, `accessTtlMs`, ...); with it, access(),
+     *                                        recordUsage() and handleWebhook() go through the cache. `[]` is an in-memory cache.
      */
     public function __construct(
         ?string $apiKey = null,
@@ -50,6 +60,7 @@ final class Client extends ResourceHolder
         ?RequestFactoryInterface $requestFactory = null,
         ?StreamFactoryInterface $streamFactory = null,
         ?Closure $sleeper = null,
+        ?array $cache = null,
     ) {
         if (\PHP_INT_SIZE < 8) {
             throw new ConfigurationException('the Payrudder SDK needs a 64-bit PHP: money amounts are int64');
@@ -84,6 +95,64 @@ final class Client extends ResourceHolder
                 usleep((int) round($seconds * 1_000_000));
             },
         ));
+        /** @phpstan-ignore argument.type (named arguments of PayrudderCache, checked when it is built) */
+        $this->cache = $cache === null ? null : new PayrudderCache($this, ...$cache);
+    }
+
+    /**
+     * Creates or updates the customer and returns the link to their customer page (`url` is null for a
+     * member who does not manage payment).
+     *
+     * @param array{id: string, name: string, email?: string, locale?: string, plan?: string, member?: array{id: string, name?: string, email?: string}, expiresInDays?: int} $input
+     */
+    public function connect(array $input): ConnectCustomerResponse
+    {
+        $body = ['name' => $input['name']];
+        foreach (['email' => 'email', 'locale' => 'locale', 'plan' => 'plan_code', 'member' => 'member', 'expiresInDays' => 'expires_in_days'] as $from => $to) {
+            if (isset($input[$from])) {
+                $body[$to] = $input[$from];
+            }
+        }
+
+        return $this->customers->connectCustomer($input['id'], $body);
+    }
+
+    /**
+     * Whether the customer may use the service now, by subscription, payment and the meters given.
+     * Cached when the client has a cache.
+     *
+     * @param string|list<string> $meters
+     */
+    public function access(string $customer, string|array $meters = [], ?string $member = null): CustomerAccess
+    {
+        $list = \is_string($meters) ? [$meters] : $meters;
+        if ($this->cache !== null) {
+            return $this->cache->access($customer, $list, $member);
+        }
+
+        return $this->customers->getCustomerAccess($customer, $list === [] ? null : implode(',', $list), $member);
+    }
+
+    /**
+     * Records one usage event; with a cache, counts it into the cached answers too.
+     *
+     * @param RequestBody|array<string,mixed> $event
+     */
+    public function recordUsage(RequestBody|array $event): EventResult
+    {
+        return $this->cache !== null ? $this->cache->recordUsage($event) : $this->events->ingest([$event])[0];
+    }
+
+    /** Invalidates cached answers for a verified webhook event; false without a cache. */
+    public function handleWebhook(WebhookEvent $event): bool
+    {
+        return $this->cache !== null && $this->cache->handleWebhook($event);
+    }
+
+    /** The cache the `cache` argument asked for; null without it. */
+    public function cache(): ?PayrudderCache
+    {
+        return $this->cache;
     }
 
     /** The API key's environment: "test" for a `prk_test_` key, "live" for every other key. */

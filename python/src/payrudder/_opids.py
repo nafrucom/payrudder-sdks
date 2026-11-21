@@ -162,6 +162,8 @@ OPERATIONS: dict[str, tuple[str, str, str]] = {
     "createPaymentLink": ("payment_links", "create_payment_link", "POST /v1/payment-links"),
     "getPaymentLink": ("payment_links", "get_payment_link", "GET /v1/payment-links/{id}"),
     "revokePaymentLink": ("payment_links", "revoke_payment_link", "DELETE /v1/payment-links/{id}"),
+    "connectCustomer": ("customers", "connect_customer", "PUT /v1/customers/{external_id}/session"),
+    "getCustomerAccess": ("customers", "get_customer_access", "GET /v1/customers/{external_id}/access"),
     "createPortalLink": ("customers", "create_portal_link", "POST /v1/customers/{external_id}/portal-links"),
     "revokePortalLinks": ("customers", "revoke_portal_links", "DELETE /v1/customers/{external_id}/portal-links"),
     "listCustomerPayments": ("customers", "list_customer_payments", "GET /v1/customers/{external_id}/payments"),
