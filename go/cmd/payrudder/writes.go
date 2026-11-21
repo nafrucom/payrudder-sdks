@@ -112,7 +112,7 @@ func (c *cli) webhooksRedeliver(ctx context.Context, args []string) error {
 
 // The four commands below make things that no key deduplicates: a repeated meter or plan version is a new version, a repeated endpoint a second endpoint. The SDK
 // retries a POST after a connection error whatever it is, so these turn its retries off: a call that failed midway is shown as a failure, and the person looks
-// (`webhooks list`, the console) before running it again. docs-site/content/idempotency.md says the same of every write without a key.
+// (`webhooks list`, the console) before running it again. docs-site/content/docs/(guides)/platform/idempotency.mdx says the same of every write without a key.
 var noRetry = payrudder.WithRequestMaxRetries(0)
 
 // enumName spells an API enum from what a person types: "month" is SUBSCRIPTION_INTERVAL_MONTH, and the full name is accepted as it is.
