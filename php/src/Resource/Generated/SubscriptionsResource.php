@@ -170,6 +170,19 @@ final class SubscriptionsResource extends AbstractResource
     }
 
     /**
+     * End a running trial now (POST /v1/subscriptions/{id}/end-trial).
+     *
+     * @param string $id
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function endTrial(string $id, ?RequestOptions $options = null): Subscription
+    {
+        return Subscription::fromArray($this->call('POST', '/v1/subscriptions/' . rawurlencode($id) . '/end-trial', [], null, $options));
+    }
+
+    /**
      * End the subscription at the end of its current billing period (POST /v1/subscriptions/{id}/cancel-at-period-end).
      *
      * @param string $id

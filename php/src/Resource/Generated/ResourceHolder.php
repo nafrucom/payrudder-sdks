@@ -18,6 +18,7 @@ abstract class ResourceHolder
     public readonly AssetsResource $assets;
     public readonly AuditEventsResource $auditEvents;
     public readonly BlocklistResource $blocklist;
+    public readonly CampaignsResource $campaigns;
     public readonly ContractAcceptancesResource $contractAcceptances;
     public readonly ContractWithdrawalsResource $contractWithdrawals;
     public readonly ContractsResource $contracts;
@@ -60,6 +61,7 @@ abstract class ResourceHolder
         $this->assets = new AssetsResource($requester);
         $this->auditEvents = new AuditEventsResource($requester);
         $this->blocklist = new BlocklistResource($requester);
+        $this->campaigns = new CampaignsResource($requester);
         $this->contractAcceptances = new ContractAcceptancesResource($requester);
         $this->contractWithdrawals = new ContractWithdrawalsResource($requester);
         $this->contracts = new ContractsResource($requester);

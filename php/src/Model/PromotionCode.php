@@ -32,6 +32,8 @@ final class PromotionCode implements Model
      * @param list<string>|null $allowedCurrencies
      * @param bool|null $restoreOnReversal
      * @param string|null $createTime
+     * @param bool|null $automatic
+     * @param string|null $startTime
      */
     public function __construct(
         public readonly ?string $id = null,
@@ -51,6 +53,8 @@ final class PromotionCode implements Model
         public readonly ?array $allowedCurrencies = null,
         public readonly ?bool $restoreOnReversal = null,
         public readonly ?string $createTime = null,
+        public readonly ?bool $automatic = null,
+        public readonly ?string $startTime = null,
     ) {}
 
     /**
@@ -76,6 +80,8 @@ final class PromotionCode implements Model
             allowedCurrencies: Cast::strings($data['allowed_currencies'] ?? null),
             restoreOnReversal: Cast::bool($data['restore_on_reversal'] ?? null),
             createTime: Cast::string($data['create_time'] ?? null),
+            automatic: Cast::bool($data['automatic'] ?? null),
+            startTime: Cast::string($data['start_time'] ?? null),
         );
     }
 
@@ -102,6 +108,8 @@ final class PromotionCode implements Model
             'allowed_currencies' => Cast::wire($this->allowedCurrencies),
             'restore_on_reversal' => $this->restoreOnReversal,
             'create_time' => $this->createTime,
+            'automatic' => $this->automatic,
+            'start_time' => $this->startTime,
         ]);
     }
 }

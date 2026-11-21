@@ -1,4 +1,4 @@
-import type { ChangeQuote, Subscription } from "./generated/types";
+import type { ChangeQuote, Coupon, Plan, PlanVersion, PromotionCode, Subscription } from "./generated/types";
 import type { Int64 } from "./int64";
 
 /** Event type names (docs/16-webhooks.md). `ping` is what `sendTestWebhook` delivers. */
@@ -20,6 +20,7 @@ export const WebhookEventTypes = {
   SubscriptionResumed: "subscription.resumed",
   SubscriptionMovedToProvider: "subscription.moved_to_provider",
   SubscriptionTrialWillEnd: "subscription.trial_will_end",
+  SubscriptionUpdated: "subscription.updated",
   PaymentLinkCreated: "payment_link.created",
   PaymentLinkPaid: "payment_link.paid",
   PaymentLinkExpired: "payment_link.expired",
@@ -28,11 +29,16 @@ export const WebhookEventTypes = {
   CreditsLow: "credits.low",
   CustomerBlocked: "customer.blocked",
   CustomerUnblocked: "customer.unblocked",
+  EntitlementUpdated: "entitlement.updated",
   PriceChangeScheduled: "price_change.scheduled",
+  CampaignStarted: "campaign.started",
+  CampaignEnded: "campaign.ended",
   ContractAccepted: "contract.accepted",
   ContractVersionPublished: "contract.version_published",
   ContractWithdrawalRequested: "contract.withdrawal_requested",
   ContractWithdrawalDecided: "contract.withdrawal_decided",
+  PlanCreated: "plan.created",
+  PlanVersionPublished: "plan.version_published",
   Ping: "ping",
 } as const;
 
@@ -152,6 +158,13 @@ export interface CustomerBlockEventData {
   suspend_service?: boolean;
 }
 
+/** `entitlement.updated`: what the customer may use of a meter changed; drop a cached entitlement (`PayrudderCache.handleWebhook` does). */
+export interface EntitlementUpdatedEventData {
+  customer_external_id: string;
+  /** Empty: every meter of the customer. */
+  meter_code: string;
+}
+
 /** A price change in an event: as the API returns it, without the fields at their zero value. Times are RFC 3339. */
 export interface WebhookPriceChange {
   id: string;
@@ -180,6 +193,22 @@ export interface PriceChangeScheduledEventData {
   price_change: WebhookPriceChange;
   scheduled: number;
   skipped: number;
+}
+
+/** `plan.created`: the plan as the API returns it. */
+export interface PlanCreatedEventData {
+  plan: Plan;
+}
+
+/** `plan.version_published`: the version as the API returns it. */
+export interface PlanVersionPublishedEventData {
+  plan_version: PlanVersion;
+}
+
+/** `campaign.started` and `campaign.ended`: the campaign's promotion code and its coupon, as the API returns them. */
+export interface CampaignEventData {
+  promotion_code: PromotionCode;
+  coupon: Coupon;
 }
 
 /** `contract.accepted`: a customer accepted one or more agreements together (one event for the group). */
@@ -262,9 +291,11 @@ type SubscriptionTypes =
   | "subscription.paused"
   | "subscription.resumed"
   | "subscription.moved_to_provider"
-  | "subscription.trial_will_end";
+  | "subscription.trial_will_end"
+  | "subscription.updated";
 type PaymentLinkTypes = "payment_link.created" | "payment_link.paid" | "payment_link.expired";
 type CustomerTypes = "customer.blocked" | "customer.unblocked";
+type CampaignTypes = "campaign.started" | "campaign.ended";
 
 type Distribute<T extends WebhookEventType, D> = T extends WebhookEventType ? Envelope<T, D> : never;
 
@@ -281,11 +312,15 @@ export type WebhookEvent =
   | Envelope<"credits.purchased", CreditsPurchasedEventData>
   | Envelope<"credits.low", CreditsLowEventData>
   | Distribute<CustomerTypes, CustomerBlockEventData>
+  | Envelope<"entitlement.updated", EntitlementUpdatedEventData>
   | Envelope<"price_change.scheduled", PriceChangeScheduledEventData>
+  | Distribute<CampaignTypes, CampaignEventData>
   | Envelope<"contract.accepted", ContractAcceptedEventData>
   | Envelope<"contract.version_published", ContractVersionPublishedEventData>
   | Envelope<"contract.withdrawal_requested", ContractWithdrawalRequestedEventData>
   | Envelope<"contract.withdrawal_decided", ContractWithdrawalDecidedEventData>
+  | Envelope<"plan.created", PlanCreatedEventData>
+  | Envelope<"plan.version_published", PlanVersionPublishedEventData>
   | Envelope<"ping", Record<string, unknown>>;
 
 export type WebhookFailureReason = "invalid_header" | "timestamp_outside_tolerance" | "no_matching_signature" | "invalid_payload";

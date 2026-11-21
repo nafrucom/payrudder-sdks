@@ -54,6 +54,11 @@ class Payrudder(Resources):
     def base_url(self) -> str:
         return self._settings.base_url
 
+    @property
+    def environment(self) -> str:
+        """The API key's environment: ``"test"`` for a ``prk_test_`` key, ``"live"`` for every other key."""
+        return "test" if self._settings.api_key.startswith("prk_test_") else "live"
+
     def close(self) -> None:
         if self._owns_http:
             self._http.close()
@@ -141,6 +146,11 @@ class AsyncPayrudder(AsyncResources):
     @property
     def base_url(self) -> str:
         return self._settings.base_url
+
+    @property
+    def environment(self) -> str:
+        """The API key's environment: ``"test"`` for a ``prk_test_`` key, ``"live"`` for every other key."""
+        return "test" if self._settings.api_key.startswith("prk_test_") else "live"
 
     async def aclose(self) -> None:
         if self._owns_http:

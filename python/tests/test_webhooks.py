@@ -147,6 +147,13 @@ def test_event_data_types_cover_each_event_family() -> None:
     assert CreditsPurchasedEventData.__required_keys__ == {"customer_id", "credits", "balance"}
     assert CreditsLowEventData.__required_keys__ == {"customer_id", "balance", "threshold"}
     assert CustomerBlockEventData.__required_keys__ == {"customer_id"}
-    assert {"customer.blocked", "customer.unblocked", "price_change.scheduled"} <= set(EVENT_TYPES)
+    assert {
+        "customer.blocked",
+        "customer.unblocked",
+        "entitlement.updated",
+        "price_change.scheduled",
+        "campaign.started",
+        "campaign.ended",
+    } <= set(EVENT_TYPES)
     assert PriceChangeScheduledEventData.__required_keys__ == {"price_change", "scheduled", "skipped"}
     assert "net_minor" in get_type_hints(InvoiceEventData)

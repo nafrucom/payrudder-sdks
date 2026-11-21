@@ -8,4 +8,5 @@ Nothing has been published or tagged yet: the version stays `0.0.0` until the fi
 ## [Unreleased]
 
 ### Added
+- `Payrudder\Cache\PayrudderCache`: entitlement checks and the catalog kept in a store your workers share (`RedisStore` over Predis or phpredis, or `MemoryStore`), invalidated by webhooks through `handleWebhook`, with usage recorded through it counted into the cache. `Client::environment()` says whether the key is a test or a live one.
 - A client for every operation of the tenant API (`/v1/*`): retries with backoff, typed errors, generator pagination, a batching `events->ingest`, and webhook verification. Typed readonly models and backed enums; PHP 8.1 or newer; the built-in transport needs only `ext-curl`.

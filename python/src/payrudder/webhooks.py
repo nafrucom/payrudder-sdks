@@ -14,7 +14,7 @@ from typing import Any, Literal, TypedDict
 
 from . import _wire
 from .errors import WebhookSignatureError
-from .models import ChangeQuote, Subscription
+from .models import ChangeQuote, Coupon, Plan, PlanVersion, PromotionCode, Subscription
 
 SIGNATURE_HEADER = "Payrudder-Signature"
 EVENT_ID_HEADER = "Payrudder-Event-Id"
@@ -43,6 +43,7 @@ class EventType:
     SUBSCRIPTION_RESUMED = "subscription.resumed"
     SUBSCRIPTION_MOVED_TO_PROVIDER = "subscription.moved_to_provider"
     SUBSCRIPTION_TRIAL_WILL_END = "subscription.trial_will_end"
+    SUBSCRIPTION_UPDATED = "subscription.updated"
     PAYMENT_LINK_CREATED = "payment_link.created"
     PAYMENT_LINK_PAID = "payment_link.paid"
     PAYMENT_LINK_EXPIRED = "payment_link.expired"
@@ -51,11 +52,16 @@ class EventType:
     CREDITS_LOW = "credits.low"
     CUSTOMER_BLOCKED = "customer.blocked"
     CUSTOMER_UNBLOCKED = "customer.unblocked"
+    ENTITLEMENT_UPDATED = "entitlement.updated"
     PRICE_CHANGE_SCHEDULED = "price_change.scheduled"
+    CAMPAIGN_STARTED = "campaign.started"
+    CAMPAIGN_ENDED = "campaign.ended"
     CONTRACT_ACCEPTED = "contract.accepted"
     CONTRACT_VERSION_PUBLISHED = "contract.version_published"
     CONTRACT_WITHDRAWAL_REQUESTED = "contract.withdrawal_requested"
     CONTRACT_WITHDRAWAL_DECIDED = "contract.withdrawal_decided"
+    PLAN_CREATED = "plan.created"
+    PLAN_VERSION_PUBLISHED = "plan.version_published"
     PING = "ping"  # sent by POST /v1/webhook-endpoints/{id}/test
 
 
@@ -215,6 +221,16 @@ class CustomerBlockEventData(_CustomerBlockEventDataRequired, total=False):
     suspend_service: bool
 
 
+class EntitlementUpdatedEventData(TypedDict):
+    """``data`` of ``entitlement.updated``: what the customer may use of a meter changed.
+
+    A cached entitlement is stale. An empty ``meter_code`` means every meter of the customer.
+    """
+
+    customer_external_id: str
+    meter_code: str
+
+
 class _WebhookPriceChangeRequired(TypedDict):
     id: str
     plan_code: str
@@ -254,6 +270,25 @@ class PriceChangeScheduledEventData(TypedDict):
     price_change: WebhookPriceChange
     scheduled: int
     skipped: int
+
+
+class CampaignEventData(TypedDict):
+    """``data`` of ``campaign.started`` and ``campaign.ended``: the campaign's promotion code and its coupon."""
+
+    promotion_code: PromotionCode
+    coupon: Coupon
+
+
+class PlanCreatedEventData(TypedDict):
+    """``data`` of ``plan.created``: the plan as the API returns it."""
+
+    plan: Plan
+
+
+class PlanVersionPublishedEventData(TypedDict):
+    """``data`` of ``plan.version_published``: the version as the API returns it."""
+
+    plan_version: PlanVersion
 
 
 class _ContractAcceptedItem(TypedDict):
@@ -337,13 +372,14 @@ class WebhookEvent(TypedDict):
     ``PaymentLinkEventData``, ``payment.disputed`` is ``PaymentDisputedEventData``, ``credits.purchased`` /
     ``credits.low`` are ``CreditsPurchasedEventData`` /
     ``CreditsLowEventData``, ``customer.blocked`` / ``customer.unblocked`` are ``CustomerBlockEventData``,
-    ``price_change.scheduled`` is
-    ``PriceChangeScheduledEventData``).
+    ``entitlement.updated`` is ``EntitlementUpdatedEventData``, ``price_change.scheduled`` is
+    ``PriceChangeScheduledEventData``, ``campaign.started`` / ``campaign.ended`` are ``CampaignEventData``).
     ``CreditsLowEventData``, ``customer.blocked`` / ``customer.unblocked`` are ``CustomerBlockEventData``;
     ``contract.accepted`` / ``contract.version_published`` /
     ``contract.withdrawal_requested`` / ``contract.withdrawal_decided`` are ``ContractAcceptedEventData`` /
     ``ContractVersionPublishedEventData`` / ``ContractWithdrawalRequestedEventData`` /
-    ``ContractWithdrawalDecidedEventData``).
+    ``ContractWithdrawalDecidedEventData``; ``plan.created`` / ``plan.version_published`` are
+    ``PlanCreatedEventData`` / ``PlanVersionPublishedEventData``).
     """
 
     id: str

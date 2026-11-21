@@ -198,6 +198,28 @@ http_response_code(200);
 `$event->dataAs(InvoiceEventData::class)` reads `data` as a typed object (`Payrudder\Webhook\Data`: `InvoiceEventData` for `invoice.*`, `CreditNoteEventData`, `SubscriptionEventData`, `PaymentLinkEventData`, `CreditsPurchasedEventData`, `CreditsLowEventData`); money fields are ints of minor units.
 `WebhookEventType::all()` lists the type names (and the `Payrudder\Enum\WebhookEventType` enum is what an endpoint's `event_types` accepts).
 
+## Caching entitlements and the catalog in Redis
+
+`PayrudderCache` keeps entitlement checks and the catalog (plans with their current prices, active credit packs, running campaigns) in a store every PHP worker and server shares. Pass the Redis client you already have (Predis or phpredis); the default `MemoryStore` lives only as long as the PHP process, which under PHP-FPM is one request. Forward verified webhooks to it, so a change in Payrudder invalidates the cached answers at once.
+
+```php
+use Payrudder\Cache\PayrudderCache;
+use Payrudder\Cache\RedisStore;
+use Payrudder\Webhook\Webhook;
+
+$cache = new PayrudderCache($client, new RedisStore($redis), onError: fn (Throwable $e) => error_log($e->getMessage()));
+
+$status = $cache->entitlement($customer, 'api_calls'); // also entitlements($customer), catalog()
+$cache->recordUsage(['customer_external_id' => $customer, 'meter_code' => 'api_calls', 'quantity' => '1', 'event_time' => date(DATE_RFC3339)]);
+
+// in your webhook route, after verifying the delivery
+$cache->handleWebhook(Webhook::constructEvent($payload, $signature, $secret));
+```
+
+- Entitlements are served for `entitlementTtlMs` (default 60 s), the catalog for `catalogTtlMs` (default 10 min); with webhooks wired a change shows at once, without them it can be that stale.
+- `recordUsage` counts the event into the cached entitlement, so a hard limit is enforced without a refetch after every event.
+- Keys start with `prefix` (default `payrudder:`) and the key's environment (`$client->environment()`), so test and live never share entries. A store error never fails a call: it reads through to the API and goes to `onError`.
+
 ## Uploads
 
 `$client->assets->uploadAssets([...paths or ['filename' => ..., 'content' => ..., 'content_type' => ...]], $metadata)` sends one multipart request (up to 20 files, 25 MiB each). For larger files use the upload-session operations (`createUploadSession`, `presignParts`, `completeUploadFile`).

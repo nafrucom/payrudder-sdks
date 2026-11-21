@@ -316,6 +316,91 @@ export interface BlocklistEntry {
   create_time: string;
 }
 
+/** A discount that new purchases get without a code, from start_time up to expire_time */
+export interface Campaign {
+  /** The campaign's own code; typing it at checkout finds nothing */
+  code: string;
+  name: string;
+  /** ended once expire_time passed or the campaign was ended early */
+  status: "upcoming" | "running" | "ended";
+  start_time: string;
+  expire_time: string;
+  target: "plans" | "packs";
+  /** Plan codes; empty means every plan */
+  plans: Array<string>;
+  /** Credit pack ids; empty means every pack */
+  packs: Array<string>;
+  percent_bps: number;
+  amount_minor: Int64;
+  currency: string;
+  bonus_percent_bps: number;
+  duration: "COUPON_DURATION_UNSPECIFIED" | "COUPON_DURATION_ONCE" | "COUPON_DURATION_REPEATING" | "COUPON_DURATION_FOREVER";
+  duration_periods: number;
+  /** 0 = unlimited */
+  max_redemptions: number;
+  redeemed: number;
+  first_purchase_only: boolean;
+  one_per_customer: boolean;
+  /** The coupon behind the campaign; its uses are in /v1/coupon-redemptions */
+  coupon_code: string;
+}
+
+export interface CampaignInput {
+  name: string;
+  /** 1000 is 10 %. Use one of percent_bps, amount_minor and bonus_percent_bps */
+  percent_bps?: number;
+  /** Minor units of currency; needs currency. int64 as a string (a number is accepted) */
+  amount_minor?: Int64;
+  currency?: string;
+  /** Extra credits on a credit pack purchase: 1000 is 10 % more. Packs only */
+  bonus_percent_bps?: number;
+  /** How many fees of a new subscription get it; plans only, default once */
+  duration?: "COUPON_DURATION_ONCE" | "COUPON_DURATION_REPEATING" | "COUPON_DURATION_FOREVER";
+  /** For a repeating campaign, how many fees */
+  duration_periods?: number;
+  target: "plans" | "packs";
+  /** Plan codes; empty means every plan */
+  plans?: Array<string>;
+  /** Credit pack ids; empty means every pack */
+  packs?: Array<string>;
+  start_time: string;
+  /** After start_time */
+  expire_time: string;
+  /** 0 or absent = unlimited */
+  max_redemptions?: number;
+  /** Only a customer who has paid for nothing yet */
+  first_purchase_only?: boolean;
+  one_per_customer?: boolean;
+}
+
+export interface CampaignInputParams {
+  name: string;
+  /** 1000 is 10 %. Use one of percent_bps, amount_minor and bonus_percent_bps */
+  percent_bps?: number;
+  /** Minor units of currency; needs currency. int64 as a string (a number is accepted) */
+  amount_minor?: Int64Input;
+  currency?: string;
+  /** Extra credits on a credit pack purchase: 1000 is 10 % more. Packs only */
+  bonus_percent_bps?: number;
+  /** How many fees of a new subscription get it; plans only, default once */
+  duration?: "COUPON_DURATION_ONCE" | "COUPON_DURATION_REPEATING" | "COUPON_DURATION_FOREVER";
+  /** For a repeating campaign, how many fees */
+  duration_periods?: number;
+  target: "plans" | "packs";
+  /** Plan codes; empty means every plan */
+  plans?: Array<string>;
+  /** Credit pack ids; empty means every pack */
+  packs?: Array<string>;
+  start_time: string;
+  /** After start_time */
+  expire_time: string;
+  /** 0 or absent = unlimited */
+  max_redemptions?: number;
+  /** Only a customer who has paid for nothing yet */
+  first_purchase_only?: boolean;
+  one_per_customer?: boolean;
+}
+
 export interface CancelSubscriptionQuery {
   end_time?: string;
   credit_unused?: boolean;
@@ -817,7 +902,7 @@ export interface CreatePaymentLinkRequest {
   promotion_code?: string;
   /** Optional: the agreements the payer must accept on this link's page. The list replaces the seller's tenant-wide required_kinds for this link (it does not add to it); empty or absent: the setting applies. The texts must be published before the link is used, or the page offers no way to pay. An ad-hoc link hands its list to the invoice link the payer continues on. 400 billing.payment_link.bad_required_contracts for an unknown kind or one named twice */
   required_contracts?: Array<"distance_sales" | "pre_info" | "tos" | "privacy">;
-  /** Optional: the "return to app" address the link's page offers its payer, instead of the app's setting (PATCH /app/v1/apps/{id}). https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the invoice link the payer continues on. 400 billing.payment_link.bad_return_url otherwise */
+  /** Optional: the "return to app" address the link's page offers its payer, instead of the return address set on the app in the console. https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the invoice link the payer continues on. 400 billing.payment_link.bad_return_url otherwise */
   return_url?: string;
   /** Default 30 for adhoc, 90 for invoice */
   expires_in_days?: number;
@@ -854,7 +939,7 @@ export interface CreatePaymentLinkRequestParams {
   promotion_code?: string;
   /** Optional: the agreements the payer must accept on this link's page. The list replaces the seller's tenant-wide required_kinds for this link (it does not add to it); empty or absent: the setting applies. The texts must be published before the link is used, or the page offers no way to pay. An ad-hoc link hands its list to the invoice link the payer continues on. 400 billing.payment_link.bad_required_contracts for an unknown kind or one named twice */
   required_contracts?: Array<"distance_sales" | "pre_info" | "tos" | "privacy">;
-  /** Optional: the "return to app" address the link's page offers its payer, instead of the app's setting (PATCH /app/v1/apps/{id}). https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the invoice link the payer continues on. 400 billing.payment_link.bad_return_url otherwise */
+  /** Optional: the "return to app" address the link's page offers its payer, instead of the return address set on the app in the console. https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the invoice link the payer continues on. 400 billing.payment_link.bad_return_url otherwise */
   return_url?: string;
   /** Default 30 for adhoc, 90 for invoice */
   expires_in_days?: number;
@@ -1172,6 +1257,8 @@ export interface Customer {
   tax_id_validated_at?: string | null;
   /** One of tr_individual, tr_business, tr_any, tr_is_tckn, tr_is_vkn, eu_vat, or empty. A hint, never a refusal: the id does not look like the kind of number this customer should have (tr_individual: not a TCKN; tr_business: not a VKN; tr_any: neither; tr_is_tckn: a business was given a TCKN; tr_is_vkn: an individual was given a VKN; eu_vat: a business in the EU has no VAT id of its country's shape). Worked out from the stored id, country and customer_type, so it follows a change of any of them. Empty: nothing to say. */
   tax_id_warning: string;
+  /** The customer has had a trial (a subscription that was ever trialing, cancelled ones included). Filled by GET /v1/customers/{external_id}; false in lists */
+  trial_used: boolean;
 }
 
 export interface CustomerBlockAppeal {
@@ -1968,6 +2055,14 @@ export interface ListBlocklistResponse {
   entries: Array<BlocklistEntry>;
 }
 
+export interface ListCampaignsQuery {
+  status?: "upcoming" | "running" | "ended";
+}
+
+export interface ListCampaignsResponse {
+  campaigns: Array<Campaign>;
+}
+
 export interface ListContractAcceptancesQuery {
   kind?: "distance_sales" | "pre_info" | "tos" | "privacy";
   source?: "api" | "hosted";
@@ -2472,6 +2567,10 @@ export interface PlanVersion {
   trial_days: number;
   /** When a trial ends inside a billing period, the fixed fee of that first period is charged from the trial's end to the period's end instead of in full. False for a version published before the rule existed (it charged the whole period and keeps doing so) */
   prorate_after_trial: boolean;
+  /** A customer who has had a trial before gets no trial from this version */
+  trial_once_per_customer: boolean;
+  /** Limits while trialing, on the meters that have one; the others keep their normal limit */
+  trial_entitlements: Array<Entitlement>;
   /** Fixed fees other than the tenant currency's monthly one, per currency and interval */
   fees: Array<CurrencyFee>;
 }
@@ -2674,6 +2773,10 @@ export interface PromotionCode {
   /** A void or full refund gives the use back to the count. Off by default */
   restore_on_reversal: boolean;
   create_time: string | null;
+  /** A campaign's code (see /v1/campaigns) */
+  automatic?: boolean;
+  /** A campaign's code works from this time on */
+  start_time?: string | null;
 }
 
 /** What a customer types. Many codes point to one coupon, each with its own limit, expiry and restrictions. */
@@ -2795,6 +2898,10 @@ export interface PublishPlanVersionRequest {
   trial_days?: number;
   /** Left out: true. When a trial ends inside a billing period, charge the first period from the trial's end to the period's end instead of the whole fee; false charges the whole fee as versions published before this rule do */
   prorate_after_trial?: boolean;
+  /** Left out: false. A customer who has had a trial before (any subscription that was ever trialing, cancelled ones included) gets no trial from this version: the subscription starts active and says trial_skipped already_used. A request's own trial_days is not checked */
+  trial_once_per_customer?: boolean;
+  /** Limits while a subscription to this version is trialing, one per meter, on meters the version prices or limits. Needs trial_days above 0. A meter left out keeps its normal limit during the trial; a customer's override still wins */
+  trial_entitlements?: Array<EntitlementInput>;
 }
 
 export interface PublishPlanVersionRequestParams {
@@ -2807,6 +2914,10 @@ export interface PublishPlanVersionRequestParams {
   trial_days?: number;
   /** Left out: true. When a trial ends inside a billing period, charge the first period from the trial's end to the period's end instead of the whole fee; false charges the whole fee as versions published before this rule do */
   prorate_after_trial?: boolean;
+  /** Left out: false. A customer who has had a trial before (any subscription that was ever trialing, cancelled ones included) gets no trial from this version: the subscription starts active and says trial_skipped already_used. A request's own trial_days is not checked */
+  trial_once_per_customer?: boolean;
+  /** Limits while a subscription to this version is trialing, one per meter, on meters the version prices or limits. Needs trial_days above 0. A meter left out keeps its normal limit during the trial; a customer's override still wins */
+  trial_entitlements?: Array<EntitlementInput>;
 }
 
 /**
@@ -3125,6 +3236,8 @@ export interface Subscription {
   /** Seats: a plain multiplier of the plan's fixed fee, 1 unless set */
   quantity: number;
   changed_from_id: string;
+  /** Only in the answer to POST /v1/subscriptions: why the subscription has no trial although its version offers one. already_used: the version gives one trial per customer and this customer has had one, so it starts active and is billed now. Empty otherwise */
+  trial_skipped: string;
 }
 
 export interface TaxRates {
@@ -3257,7 +3370,7 @@ export interface WebhookEndpointInput {
   active: boolean;
 }
 
-export type WebhookEventType = "invoice.finalized" | "invoice.paid" | "invoice.voided" | "invoice.uncollectible" | "credit_note.created" | "credit_note.refunded" | "credit_note.refund_failed" | "subscription.created" | "subscription.changed" | "subscription.change_scheduled" | "subscription.cancelled" | "subscription.cancellation_scheduled" | "subscription.cancellation_withdrawn" | "subscription.paused" | "subscription.resumed" | "subscription.moved_to_provider" | "subscription.trial_will_end" | "payment_link.created" | "payment_link.paid" | "payment_link.expired" | "payment.disputed" | "credits.purchased" | "credits.low" | "customer.blocked" | "customer.unblocked" | "price_change.scheduled" | "contract.accepted" | "contract.version_published" | "contract.withdrawal_requested" | "contract.withdrawal_decided";
+export type WebhookEventType = "invoice.finalized" | "invoice.paid" | "invoice.voided" | "invoice.uncollectible" | "credit_note.created" | "credit_note.refunded" | "credit_note.refund_failed" | "subscription.created" | "subscription.changed" | "subscription.change_scheduled" | "subscription.cancelled" | "subscription.cancellation_scheduled" | "subscription.cancellation_withdrawn" | "subscription.paused" | "subscription.resumed" | "subscription.moved_to_provider" | "subscription.trial_will_end" | "subscription.updated" | "payment_link.created" | "payment_link.paid" | "payment_link.expired" | "payment.disputed" | "credits.purchased" | "credits.low" | "customer.blocked" | "customer.unblocked" | "entitlement.updated" | "price_change.scheduled" | "campaign.started" | "campaign.ended" | "contract.accepted" | "contract.version_published" | "contract.withdrawal_requested" | "contract.withdrawal_decided" | "plan.created" | "plan.version_published";
 
 export interface WithdrawPriceChangeResponse {
   price_change: PriceChange;

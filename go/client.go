@@ -66,6 +66,14 @@ type Client struct {
 	jitter func() float64
 }
 
+// Environment is the API key's environment: "test" for a prk_test_ key, "live" for every other key.
+func (c *Client) Environment() string {
+	if strings.HasPrefix(c.apiKey, "prk_test_") {
+		return "test"
+	}
+	return "live"
+}
+
 // Option configures New.
 type Option func(*Client)
 

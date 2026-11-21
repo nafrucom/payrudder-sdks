@@ -691,6 +691,13 @@ class SubscriptionsResource:
         """
         return cast("m.Subscription", self._client._request("POST", f"/v1/subscriptions/{_p(id)}/resume", options=options))
 
+    def end_trial(self, id: str, *, options: RequestOptions | None = None) -> m.Subscription:
+        """End a running trial now.
+
+        ``POST /v1/subscriptions/{id}/end-trial``
+        """
+        return cast("m.Subscription", self._client._request("POST", f"/v1/subscriptions/{_p(id)}/end-trial", options=options))
+
     def schedule_cancellation(self, id: str, *, options: RequestOptions | None = None) -> m.Subscription:
         """End the subscription at the end of its current billing period.
 
@@ -1042,6 +1049,34 @@ class PromotionCodesResource:
         ``DELETE /v1/promotion-codes/{code}``
         """
         return cast("m.PromotionCode", self._client._request("DELETE", f"/v1/promotion-codes/{_p(code)}", response_wire='PromotionCode', options=options))
+
+
+class CampaignsResource:
+    """``/v1/campaigns`` and related operations."""
+
+    def __init__(self, client: Payrudder) -> None:
+        self._client = client
+
+    def list_campaigns(self, *, status: Literal["upcoming", "running", "ended"] | None = None, options: RequestOptions | None = None) -> m.ListCampaignsResponse:
+        """Campaigns, latest start first.
+
+        ``GET /v1/campaigns``
+        """
+        return cast("m.ListCampaignsResponse", self._client._request("GET", "/v1/campaigns", query={"status": status}, response_wire='ListCampaignsResponse', options=options))
+
+    def create_campaign(self, body: m.CampaignInput, *, options: RequestOptions | None = None) -> m.Campaign:
+        """Start a campaign, a discount that applies without a code.
+
+        ``POST /v1/campaigns``
+        """
+        return cast("m.Campaign", self._client._request("POST", "/v1/campaigns", body=body, body_wire='CampaignInput', response_wire='Campaign', options=options))
+
+    def end_campaign(self, code: str, *, options: RequestOptions | None = None) -> m.Campaign:
+        """End a campaign now (purchases already made keep their discount).
+
+        ``DELETE /v1/campaigns/{code}``
+        """
+        return cast("m.Campaign", self._client._request("DELETE", f"/v1/campaigns/{_p(code)}", response_wire='Campaign', options=options))
 
 
 class CouponRedemptionsResource:
@@ -1865,6 +1900,7 @@ class Resources:
     webhook_deliveries: WebhookDeliveriesResource
     coupons: CouponsResource
     promotion_codes: PromotionCodesResource
+    campaigns: CampaignsResource
     coupon_redemptions: CouponRedemptionsResource
     promotions: PromotionsResource
     affiliates: AffiliatesResource
@@ -1906,6 +1942,7 @@ class Resources:
         self.webhook_deliveries = WebhookDeliveriesResource(client)
         self.coupons = CouponsResource(client)
         self.promotion_codes = PromotionCodesResource(client)
+        self.campaigns = CampaignsResource(client)
         self.coupon_redemptions = CouponRedemptionsResource(client)
         self.promotions = PromotionsResource(client)
         self.affiliates = AffiliatesResource(client)
@@ -2605,6 +2642,13 @@ class AsyncSubscriptionsResource:
         """
         return cast("m.Subscription", await self._client._request("POST", f"/v1/subscriptions/{_p(id)}/resume", options=options))
 
+    async def end_trial(self, id: str, *, options: RequestOptions | None = None) -> m.Subscription:
+        """End a running trial now.
+
+        ``POST /v1/subscriptions/{id}/end-trial``
+        """
+        return cast("m.Subscription", await self._client._request("POST", f"/v1/subscriptions/{_p(id)}/end-trial", options=options))
+
     async def schedule_cancellation(self, id: str, *, options: RequestOptions | None = None) -> m.Subscription:
         """End the subscription at the end of its current billing period.
 
@@ -2959,6 +3003,34 @@ class AsyncPromotionCodesResource:
         ``DELETE /v1/promotion-codes/{code}``
         """
         return cast("m.PromotionCode", await self._client._request("DELETE", f"/v1/promotion-codes/{_p(code)}", response_wire='PromotionCode', options=options))
+
+
+class AsyncCampaignsResource:
+    """``/v1/campaigns`` and related operations."""
+
+    def __init__(self, client: AsyncPayrudder) -> None:
+        self._client = client
+
+    async def list_campaigns(self, *, status: Literal["upcoming", "running", "ended"] | None = None, options: RequestOptions | None = None) -> m.ListCampaignsResponse:
+        """Campaigns, latest start first.
+
+        ``GET /v1/campaigns``
+        """
+        return cast("m.ListCampaignsResponse", await self._client._request("GET", "/v1/campaigns", query={"status": status}, response_wire='ListCampaignsResponse', options=options))
+
+    async def create_campaign(self, body: m.CampaignInput, *, options: RequestOptions | None = None) -> m.Campaign:
+        """Start a campaign, a discount that applies without a code.
+
+        ``POST /v1/campaigns``
+        """
+        return cast("m.Campaign", await self._client._request("POST", "/v1/campaigns", body=body, body_wire='CampaignInput', response_wire='Campaign', options=options))
+
+    async def end_campaign(self, code: str, *, options: RequestOptions | None = None) -> m.Campaign:
+        """End a campaign now (purchases already made keep their discount).
+
+        ``DELETE /v1/campaigns/{code}``
+        """
+        return cast("m.Campaign", await self._client._request("DELETE", f"/v1/campaigns/{_p(code)}", response_wire='Campaign', options=options))
 
 
 class AsyncCouponRedemptionsResource:
@@ -3796,6 +3868,7 @@ class AsyncResources:
     webhook_deliveries: AsyncWebhookDeliveriesResource
     coupons: AsyncCouponsResource
     promotion_codes: AsyncPromotionCodesResource
+    campaigns: AsyncCampaignsResource
     coupon_redemptions: AsyncCouponRedemptionsResource
     promotions: AsyncPromotionsResource
     affiliates: AsyncAffiliatesResource
@@ -3837,6 +3910,7 @@ class AsyncResources:
         self.webhook_deliveries = AsyncWebhookDeliveriesResource(client)
         self.coupons = AsyncCouponsResource(client)
         self.promotion_codes = AsyncPromotionCodesResource(client)
+        self.campaigns = AsyncCampaignsResource(client)
         self.coupon_redemptions = AsyncCouponRedemptionsResource(client)
         self.promotions = AsyncPromotionsResource(client)
         self.affiliates = AsyncAffiliatesResource(client)

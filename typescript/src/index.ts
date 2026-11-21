@@ -17,6 +17,8 @@ export { EventsResource, MAX_EVENTS_PER_BATCH, MAX_BATCH_BYTES } from "./events"
 export type { IngestEvent } from "./events";
 export { EntitlementCache } from "./entitlement-cache";
 export type { EntitlementCacheOptions, EntitlementSource } from "./entitlement-cache";
+export { PayrudderCache, MemoryStore, RedisStore } from "./cache";
+export type { CacheStore, CacheClient, CacheWebhookEvent, Catalog, CatalogPlan, PayrudderCacheOptions, RedisLike } from "./cache";
 export { toBigInt } from "./int64";
 export { paginate } from "./pagination";
 export {
@@ -40,7 +42,9 @@ export type {
   CreditsLowEventData,
   PaymentDisputedEventData,
   CustomerBlockEventData,
+  EntitlementUpdatedEventData,
   PriceChangeScheduledEventData,
+  CampaignEventData,
 } from "./webhooks";
 export { VERSION } from "./version";
 // Request/response models of the API. WebhookEventType (the delivery's type names) is the hand-written one above.

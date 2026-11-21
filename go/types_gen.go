@@ -350,6 +350,68 @@ type BlocklistEntry struct {
 	CreateTime time.Time `json:"create_time"`
 }
 
+// Campaign: A discount that new purchases get without a code, from start_time up to expire_time
+type Campaign struct {
+	// The campaign's own code; typing it at checkout finds nothing
+	Code string `json:"code"`
+	Name string `json:"name"`
+	// ended once expire_time passed or the campaign was ended early. One of: upcoming, running, ended.
+	Status     string    `json:"status"`
+	StartTime  time.Time `json:"start_time"`
+	ExpireTime time.Time `json:"expire_time"`
+	// One of: plans, packs.
+	Target string `json:"target"`
+	// Plan codes; empty means every plan
+	Plans []string `json:"plans"`
+	// Credit pack ids; empty means every pack
+	Packs           []string `json:"packs"`
+	PercentBps      int      `json:"percent_bps"`
+	AmountMinor     Int64    `json:"amount_minor"`
+	Currency        string   `json:"currency"`
+	BonusPercentBps int      `json:"bonus_percent_bps"`
+	// One of: COUPON_DURATION_UNSPECIFIED, COUPON_DURATION_ONCE, COUPON_DURATION_REPEATING, COUPON_DURATION_FOREVER.
+	Duration        string `json:"duration"`
+	DurationPeriods int    `json:"duration_periods"`
+	// 0 = unlimited
+	MaxRedemptions    int  `json:"max_redemptions"`
+	Redeemed          int  `json:"redeemed"`
+	FirstPurchaseOnly bool `json:"first_purchase_only"`
+	OnePerCustomer    bool `json:"one_per_customer"`
+	// The coupon behind the campaign; its uses are in /v1/coupon-redemptions
+	CouponCode string `json:"coupon_code"`
+}
+
+// CampaignInput is an object of the API; see components.schemas.CampaignInput in api/openapi/v1.yaml.
+type CampaignInput struct {
+	Name string `json:"name"`
+	// 1000 is 10 %. Use one of percent_bps, amount_minor and bonus_percent_bps
+	PercentBps *int `json:"percent_bps,omitempty"`
+	// Minor units of currency; needs currency. int64 as a string (a number is accepted)
+	AmountMinor *Int64 `json:"amount_minor,omitempty"`
+	Currency    string `json:"currency,omitempty"`
+	// Extra credits on a credit pack purchase: 1000 is 10 % more. Packs only
+	BonusPercentBps *int `json:"bonus_percent_bps,omitempty"`
+	// How many fees of a new subscription get it; plans only, default once. One of: COUPON_DURATION_ONCE,
+	// COUPON_DURATION_REPEATING, COUPON_DURATION_FOREVER.
+	Duration string `json:"duration,omitempty"`
+	// For a repeating campaign, how many fees
+	DurationPeriods *int `json:"duration_periods,omitempty"`
+	// One of: plans, packs.
+	Target string `json:"target"`
+	// Plan codes; empty means every plan
+	Plans []string `json:"plans,omitempty"`
+	// Credit pack ids; empty means every pack
+	Packs     []string  `json:"packs,omitempty"`
+	StartTime time.Time `json:"start_time"`
+	// After start_time
+	ExpireTime time.Time `json:"expire_time"`
+	// 0 or absent = unlimited
+	MaxRedemptions *int `json:"max_redemptions,omitempty"`
+	// Only a customer who has paid for nothing yet
+	FirstPurchaseOnly *bool `json:"first_purchase_only,omitempty"`
+	OnePerCustomer    *bool `json:"one_per_customer,omitempty"`
+}
+
 // CancelSubscriptionResponse is the response of CancelSubscription.
 type CancelSubscriptionResponse struct {
 	Subscription Subscription `json:"subscription"`
@@ -835,8 +897,8 @@ type CreatePaymentLinkRequest struct {
 	// list to the invoice link the payer continues on. 400 billing.payment_link.bad_required_contracts for an
 	// unknown kind or one named twice
 	RequiredContracts []string `json:"required_contracts,omitempty"`
-	// Optional: the "return to app" address the link's page offers its payer, instead of the app's setting (PATCH
-	// /app/v1/apps/{id}). https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the
+	// Optional: the "return to app" address the link's page offers its payer, instead of the return address set on
+	// the app in the console. https on a public host name, or http(s) on localhost. An ad-hoc link hands it to the
 	// invoice link the payer continues on. 400 billing.payment_link.bad_return_url otherwise
 	ReturnURL string `json:"return_url,omitempty"`
 	// Default 30 for adhoc, 90 for invoice
@@ -1217,6 +1279,9 @@ type Customer struct {
 	// was given a VKN; eu_vat: a business in the EU has no VAT id of its country's shape). Worked out from the
 	// stored id, country and customer_type, so it follows a change of any of them. Empty: nothing to say.
 	TaxIDWarning string `json:"tax_id_warning"`
+	// The customer has had a trial (a subscription that was ever trialing, cancelled ones included). Filled by GET
+	// /v1/customers/{external_id}; false in lists
+	TrialUsed bool `json:"trial_used"`
 }
 
 // CustomerBlockAppeal is an object of the API; see components.schemas.CustomerBlockAppeal in
@@ -1942,6 +2007,11 @@ type ListBlocklistResponse struct {
 	Entries []BlocklistEntry `json:"entries"`
 }
 
+// ListCampaignsResponse is the response of ListCampaigns.
+type ListCampaignsResponse struct {
+	Campaigns []Campaign `json:"campaigns"`
+}
+
 // ListContractAcceptancesResponse is the response of ListContractAcceptances.
 type ListContractAcceptancesResponse struct {
 	Acceptances []ContractAcceptance `json:"acceptances"`
@@ -2321,6 +2391,10 @@ type PlanVersion struct {
 	// to the period's end instead of in full. False for a version published before the rule existed (it charged the
 	// whole period and keeps doing so)
 	ProrateAfterTrial bool `json:"prorate_after_trial"`
+	// A customer who has had a trial before gets no trial from this version
+	TrialOncePerCustomer bool `json:"trial_once_per_customer"`
+	// Limits while trialing, on the meters that have one; the others keep their normal limit
+	TrialEntitlements []Entitlement `json:"trial_entitlements"`
 	// Fixed fees other than the tenant currency's monthly one, per currency and interval
 	Fees []CurrencyFee `json:"fees"`
 }
@@ -2531,6 +2605,10 @@ type PromotionCode struct {
 	// A void or full refund gives the use back to the count. Off by default
 	RestoreOnReversal bool       `json:"restore_on_reversal"`
 	CreateTime        *time.Time `json:"create_time"`
+	// A campaign's code (see /v1/campaigns)
+	Automatic bool `json:"automatic,omitempty"`
+	// A campaign's code works from this time on
+	StartTime *time.Time `json:"start_time,omitempty"`
 }
 
 // PromotionCodeInput: What a customer types. Many codes point to one coupon, each with its own limit, expiry
@@ -2617,6 +2695,14 @@ type PublishPlanVersionRequest struct {
 	// the period's end instead of the whole fee; false charges the whole fee as versions published before this rule
 	// do
 	ProrateAfterTrial *bool `json:"prorate_after_trial,omitempty"`
+	// Left out: false. A customer who has had a trial before (any subscription that was ever trialing, cancelled
+	// ones included) gets no trial from this version: the subscription starts active and says trial_skipped
+	// already_used. A request's own trial_days is not checked
+	TrialOncePerCustomer *bool `json:"trial_once_per_customer,omitempty"`
+	// Limits while a subscription to this version is trialing, one per meter, on meters the version prices or
+	// limits. Needs trial_days above 0. A meter left out keeps its normal limit during the trial; a customer's
+	// override still wins
+	TrialEntitlements []EntitlementInput `json:"trial_entitlements,omitempty"`
 }
 
 // RecordContractAcceptanceRequest is the request body of RecordContractAcceptance.
@@ -2975,6 +3061,10 @@ type Subscription struct {
 	// Seats: a plain multiplier of the plan's fixed fee, 1 unless set
 	Quantity      int    `json:"quantity"`
 	ChangedFromID string `json:"changed_from_id"`
+	// Only in the answer to POST /v1/subscriptions: why the subscription has no trial although its version offers
+	// one. already_used: the version gives one trial per customer and this customer has had one, so it starts
+	// active and is billed now. Empty otherwise
+	TrialSkipped string `json:"trial_skipped"`
 }
 
 // TaxRates is an object of the API; see components.schemas.TaxRates in api/openapi/v1.yaml.
@@ -3575,6 +3665,23 @@ func (p *ExportAuditEventsParams) values() url.Values {
 	}
 	if p.To != nil {
 		v.Set("to", p.To.UTC().Format(time.RFC3339Nano))
+	}
+	return v
+}
+
+// ListCampaignsParams are the query parameters of ListCampaigns.
+type ListCampaignsParams struct {
+	// One of: upcoming, running, ended.
+	Status string
+}
+
+func (p *ListCampaignsParams) values() url.Values {
+	v := url.Values{}
+	if p == nil {
+		return v
+	}
+	if p.Status != "" {
+		v.Set("status", p.Status)
 	}
 	return v
 }

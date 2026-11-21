@@ -49,6 +49,12 @@ MODELS: dict[str, dict[str, Any]] = {
     'Asset': {
         'size_bytes': ('int',),
     },
+    'Campaign': {
+        'amount_minor': ('int',),
+    },
+    'CampaignInput': {
+        'amount_minor': ('int',),
+    },
     'CancelSubscriptionResponse': {
         'credited_minor': ('int',),
     },
@@ -255,6 +261,9 @@ MODELS: dict[str, dict[str, Any]] = {
     },
     'ListAssetsResponse': {
         'assets': ('list', ('model', 'Asset')),
+    },
+    'ListCampaignsResponse': {
+        'campaigns': ('list', ('model', 'Campaign')),
     },
     'ListCouponRedemptionsResponse': {
         'redemptions': ('list', ('model', 'CouponRedemption')),

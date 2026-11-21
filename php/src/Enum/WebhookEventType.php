@@ -25,6 +25,7 @@ enum WebhookEventType: string
     case SubscriptionResumed = 'subscription.resumed';
     case SubscriptionMovedToProvider = 'subscription.moved_to_provider';
     case SubscriptionTrialWillEnd = 'subscription.trial_will_end';
+    case SubscriptionUpdated = 'subscription.updated';
     case PaymentLinkCreated = 'payment_link.created';
     case PaymentLinkPaid = 'payment_link.paid';
     case PaymentLinkExpired = 'payment_link.expired';
@@ -33,9 +34,14 @@ enum WebhookEventType: string
     case CreditsLow = 'credits.low';
     case CustomerBlocked = 'customer.blocked';
     case CustomerUnblocked = 'customer.unblocked';
+    case EntitlementUpdated = 'entitlement.updated';
     case PriceChangeScheduled = 'price_change.scheduled';
+    case CampaignStarted = 'campaign.started';
+    case CampaignEnded = 'campaign.ended';
     case ContractAccepted = 'contract.accepted';
     case ContractVersionPublished = 'contract.version_published';
     case ContractWithdrawalRequested = 'contract.withdrawal_requested';
     case ContractWithdrawalDecided = 'contract.withdrawal_decided';
+    case PlanCreated = 'plan.created';
+    case PlanVersionPublished = 'plan.version_published';
 }

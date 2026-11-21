@@ -118,6 +118,28 @@ async for payout in client.affiliates.iter_affiliate_payouts():  # async client
     ...
 ```
 
+## Caching entitlements and the catalog in Redis
+
+`PayrudderCache` keeps entitlement checks and the catalog (plans with their current prices, active credit packs, running campaigns) in a store every instance of your app shares. Pass the redis-py client you already have; without a store it uses a `MemoryStore` in the process. Forward verified webhooks to it, so a change in Payrudder invalidates the cached answers at once.
+
+```python
+import redis
+from payrudder import PayrudderCache, RedisStore, construct_event
+
+cache = PayrudderCache(client, store=RedisStore(redis.Redis()), on_error=logger.warning)
+
+status = cache.entitlement(customer, "api_calls")  # also cache.entitlements(customer), cache.catalog()
+cache.record_usage({"customer_external_id": customer, "meter_code": "api_calls", "quantity": "1", "event_time": now})
+
+# in your webhook view, after verifying the delivery
+cache.handle_webhook(construct_event(body, signature, secret))
+```
+
+- Entitlements are served for `entitlement_ttl_ms` (default 60 s), the catalog for `catalog_ttl_ms` (default 10 min); with webhooks wired a change shows at once, without them it can be that stale.
+- `record_usage` counts the event into the cached entitlement, so a hard limit is enforced without a refetch after every event.
+- Keys start with `prefix` (default `payrudder:`) and the key's environment (`client.environment`), so test and live never share entries. A store error never fails a call: it reads through to the API and goes to `on_error`.
+- The cache works with the sync `Payrudder` client.
+
 ## Errors
 
 ```python

@@ -8,6 +8,7 @@ import {
   AssetsResource,
   AuditEventsResource,
   BlocklistResource,
+  CampaignsResource,
   ContractAcceptancesResource,
   ContractWithdrawalsResource,
   ContractsResource,
@@ -287,6 +288,7 @@ export abstract class PayrudderResources {
   readonly assets: AssetsResource;
   readonly auditEvents: AuditEventsResource;
   readonly blocklist: BlocklistResource;
+  readonly campaigns: CampaignsResource;
   readonly contractAcceptances: ContractAcceptancesResource;
   readonly contractWithdrawals: ContractWithdrawalsResource;
   readonly contracts: ContractsResource;
@@ -330,6 +332,7 @@ export abstract class PayrudderResources {
     this.assets = new AssetsResource(t);
     this.auditEvents = new AuditEventsResource(t);
     this.blocklist = new BlocklistResource(t);
+    this.campaigns = new CampaignsResource(t);
     this.contractAcceptances = new ContractAcceptancesResource(t);
     this.contractWithdrawals = new ContractWithdrawalsResource(t);
     this.contracts = new ContractsResource(t);

@@ -43,6 +43,7 @@ const (
 	EventSubscriptionResumed             = "subscription.resumed"
 	EventSubscriptionMovedToProvider     = "subscription.moved_to_provider"
 	EventSubscriptionTrialWillEnd        = "subscription.trial_will_end"
+	EventSubscriptionUpdated             = "subscription.updated"
 	EventPaymentLinkCreated              = "payment_link.created"
 	EventPaymentLinkPaid                 = "payment_link.paid"
 	EventPaymentLinkExpired              = "payment_link.expired"
@@ -51,11 +52,16 @@ const (
 	EventCreditsLow                      = "credits.low"
 	EventCustomerBlocked                 = "customer.blocked"
 	EventCustomerUnblocked               = "customer.unblocked"
+	EventEntitlementUpdated              = "entitlement.updated"
 	EventPriceChangeScheduled            = "price_change.scheduled"
+	EventCampaignStarted                 = "campaign.started"
+	EventCampaignEnded                   = "campaign.ended"
 	EventContractAccepted                = "contract.accepted"
 	EventContractVersionPublished        = "contract.version_published"
 	EventContractWithdrawalRequested     = "contract.withdrawal_requested"
 	EventContractWithdrawalDecided       = "contract.withdrawal_decided"
+	EventPlanCreated                     = "plan.created"
+	EventPlanVersionPublished            = "plan.version_published"
 	// EventPing is what POST /v1/webhook-endpoints/{id}/test sends.
 	EventPing = "ping"
 )
@@ -66,12 +72,15 @@ var WebhookEventTypes = []string{
 	EventCreditNoteCreated, EventCreditNoteRefunded, EventCreditNoteRefundFailed,
 	EventSubscriptionCreated, EventSubscriptionChanged, EventSubscriptionChangeScheduled, EventSubscriptionCancelled,
 	EventSubscriptionCancellationSet, EventSubscriptionCancellationDropped, EventSubscriptionPaused,
-	EventSubscriptionResumed, EventSubscriptionMovedToProvider, EventSubscriptionTrialWillEnd,
+	EventSubscriptionResumed, EventSubscriptionMovedToProvider, EventSubscriptionTrialWillEnd, EventSubscriptionUpdated,
 	EventPaymentLinkCreated, EventPaymentLinkPaid, EventPaymentLinkExpired, EventPaymentDisputed,
 	EventCreditsPurchased, EventCreditsLow,
 	EventCustomerBlocked, EventCustomerUnblocked,
+	EventEntitlementUpdated,
 	EventPriceChangeScheduled,
+	EventCampaignStarted, EventCampaignEnded,
 	EventContractAccepted, EventContractVersionPublished, EventContractWithdrawalRequested, EventContractWithdrawalDecided,
+	EventPlanCreated, EventPlanVersionPublished,
 }
 
 // Reasons a delivery is refused. Test with errors.Is.
@@ -309,12 +318,35 @@ type CustomerBlockEventData struct {
 	SuspendService bool `json:"suspend_service,omitempty"`
 }
 
+// EntitlementUpdatedEventData is the data of entitlement.updated: what the customer may use of a meter changed, so a cached entitlement is stale.
+type EntitlementUpdatedEventData struct {
+	CustomerExternalID string `json:"customer_external_id"`
+	// MeterCode is the meter whose entitlement changed; empty: every meter of the customer.
+	MeterCode string `json:"meter_code"`
+}
+
 // PriceChangeEventData is the data of price_change.scheduled: the price change (a run that scheduled at least one subscription) and what that run did.
 type PriceChangeEventData struct {
 	PriceChange WebhookPriceChange `json:"price_change"`
 	// Scheduled and Skipped are the subscriptions the run that sent the event scheduled and left out.
 	Scheduled int `json:"scheduled"`
 	Skipped   int `json:"skipped"`
+}
+
+// PlanCreatedEventData is the data of plan.created: the plan as the API returns it.
+type PlanCreatedEventData struct {
+	Plan Plan `json:"plan"`
+}
+
+// PlanVersionPublishedEventData is the data of plan.version_published: the version as the API returns it.
+type PlanVersionPublishedEventData struct {
+	PlanVersion PlanVersion `json:"plan_version"`
+}
+
+// CampaignEventData is the data of campaign.started and campaign.ended: the campaign's promotion code and its coupon, as the API returns them.
+type CampaignEventData struct {
+	PromotionCode PromotionCode `json:"promotion_code"`
+	Coupon        Coupon        `json:"coupon"`
 }
 
 // WebhookPriceChange is a price change in an event: as the API returns it, without the fields at their zero value.

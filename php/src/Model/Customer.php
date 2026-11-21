@@ -37,6 +37,7 @@ final class Customer implements Model
      * @param string|null $phone
      * @param string|null $taxIdValidatedAt
      * @param string|null $taxIdWarning
+     * @param bool|null $trialUsed
      */
     public function __construct(
         public readonly ?string $id = null,
@@ -61,6 +62,7 @@ final class Customer implements Model
         public readonly ?string $phone = null,
         public readonly ?string $taxIdValidatedAt = null,
         public readonly ?string $taxIdWarning = null,
+        public readonly ?bool $trialUsed = null,
     ) {}
 
     /**
@@ -91,6 +93,7 @@ final class Customer implements Model
             phone: Cast::string($data['phone'] ?? null),
             taxIdValidatedAt: Cast::string($data['tax_id_validated_at'] ?? null),
             taxIdWarning: Cast::string($data['tax_id_warning'] ?? null),
+            trialUsed: Cast::bool($data['trial_used'] ?? null),
         );
     }
 
@@ -122,6 +125,7 @@ final class Customer implements Model
             'phone' => $this->phone,
             'tax_id_validated_at' => $this->taxIdValidatedAt,
             'tax_id_warning' => $this->taxIdWarning,
+            'trial_used' => $this->trialUsed,
         ]);
     }
 }

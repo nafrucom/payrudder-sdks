@@ -10,7 +10,12 @@ import { HttpTransport, resolveConfig, type PayrudderOptions } from "./transport
  * ```
  */
 export class Payrudder extends PayrudderResources {
+  /** The API key's environment: `prk_test_` keys are "test", every other key "live". */
+  readonly environment: "test" | "live";
+
   constructor(options: PayrudderOptions = {}) {
-    super(new HttpTransport(resolveConfig(options)));
+    const config = resolveConfig(options);
+    super(new HttpTransport(config));
+    this.environment = config.apiKey.startsWith("prk_test_") ? "test" : "live";
   }
 }

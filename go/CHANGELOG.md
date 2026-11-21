@@ -9,6 +9,7 @@ Nothing has been published or tagged yet: the version stays `0.0.0` until the fi
 
 ### Added
 - A client for every operation of the tenant API (`/v1/*`): retries with backoff, typed errors, `iter.Seq2` pagination, a batching `Events.Ingest`, and webhook verification (`VerifyWebhook`, `ConstructEvent`). Standard library only; Go 1.23 or newer.
+- `NewCache`: entitlement checks and the catalog kept in a store your instances share (`CacheStore`, three methods; `NewMemoryStore`, and a go-redis adapter in the README), invalidated by webhooks through `HandleWebhook`, with usage recorded through it counted into the cache. `Client.Environment` says whether the key is a test or a live one.
 - The `payrudder` command line (`go install github.com/nafrucom/payrudder-sdks/go/cmd/payrudder`): `login`, `events send`, `events tail`, `webhooks listen`, `webhooks trigger ping`, `webhooks deliveries`, `webhooks list`, `customers list`, `invoices list`.
 - `payrudder webhooks create`, `meters create`, `subscriptions create` and `plans publish -f version.json` (the file is the body of the publish request; an unknown field is refused before anything is sent). The three calls with no idempotency key and no unique key are not retried by the command.
 

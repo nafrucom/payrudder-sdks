@@ -28,6 +28,7 @@ interface Entry {
  *
  * The price is staleness: a customer who reaches a hard limit keeps being allowed until the cached answer is refreshed. Call `invalidate` after you
  * record usage that matters, or lower `ttlMs`. The cache lives in one process (one server, one edge isolate): it is not shared between instances.
+ * `PayrudderCache` is the shared-store option: entries in your Redis (or memory), invalidated by webhooks.
  *
  * ```ts
  * const limits = new EntitlementCache(payrudder.customers, { ttlMs: 5_000 });

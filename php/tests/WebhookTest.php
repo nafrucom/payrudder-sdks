@@ -6,6 +6,7 @@ namespace Payrudder\Tests;
 
 use Payrudder\Exception\WebhookException;
 use Payrudder\Tools\SpecLoader;
+use Payrudder\Webhook\Data\CampaignEventData;
 use Payrudder\Webhook\Data\CreditsLowEventData;
 use Payrudder\Webhook\Data\CustomerBlockEventData;
 use Payrudder\Webhook\Data\InvoiceEventData;
@@ -156,5 +157,11 @@ final class WebhookTest extends TestCase
         self::assertSame('basic', $price->priceChange['plan_code']);
         self::assertSame(3, $price->scheduled);
         self::assertSame(1, $price->skipped);
+
+        $campaign = WebhookEvent::fromJson('{"id":"5","type":"campaign.started","data":{"promotion_code":{"code":"AUTO-ABCDEFGH","automatic":true},"coupon":{"code":"CAMPAIGN-X","name":"Black Friday","percent_bps":2000}}}')
+            ->dataAs(CampaignEventData::class);
+        self::assertSame('AUTO-ABCDEFGH', $campaign->promotionCode->code);
+        self::assertTrue($campaign->promotionCode->automatic);
+        self::assertSame('Black Friday', $campaign->coupon->name);
     }
 }

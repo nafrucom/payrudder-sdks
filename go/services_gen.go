@@ -31,6 +31,8 @@ type services struct {
 	AuditEvents *AuditEventsService
 	// Blocklist groups the blocklist operations.
 	Blocklist *BlocklistService
+	// Campaigns groups the campaigns operations.
+	Campaigns *CampaignsService
 	// ContractAcceptances groups the contract acceptances operations.
 	ContractAcceptances *ContractAcceptancesService
 	// ContractWithdrawals groups the contract withdrawals operations.
@@ -107,6 +109,7 @@ func (s *services) initServices(c *Client) {
 	s.Assets = (*AssetsService)(&service{c: c})
 	s.AuditEvents = (*AuditEventsService)(&service{c: c})
 	s.Blocklist = (*BlocklistService)(&service{c: c})
+	s.Campaigns = (*CampaignsService)(&service{c: c})
 	s.ContractAcceptances = (*ContractAcceptancesService)(&service{c: c})
 	s.ContractWithdrawals = (*ContractWithdrawalsService)(&service{c: c})
 	s.Contracts = (*ContractsService)(&service{c: c})
@@ -728,6 +731,48 @@ func (s *BlocklistService) AddBlocklistEntry(ctx context.Context, req *AddBlockl
 // Needs customers:write.
 func (s *BlocklistService) RemoveBlocklistEntry(ctx context.Context, id string, opts ...RequestOption) error {
 	return s.c.do(ctx, requestSpec{method: http.MethodDelete, path: "/v1/blocklist/" + url.PathEscape(id), query: nil, body: nil}, nil, opts)
+}
+
+// CampaignsService is the campaigns namespace of the API.
+type CampaignsService service
+
+// ListCampaigns: Campaigns, latest start first (GET /v1/campaigns).
+//
+// Not paged: the response is the complete list.
+func (s *CampaignsService) ListCampaigns(ctx context.Context, params *ListCampaignsParams, opts ...RequestOption) (*ListCampaignsResponse, error) {
+	var out ListCampaignsResponse
+	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/campaigns", query: params.values(), body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// CreateCampaign: Start a campaign, a discount that applies without a code (POST /v1/campaigns).
+//
+// A campaign takes its discount off new purchases of its plans (new subscriptions) or credit packs from
+// start_time up to expire_time, without a typed code. A typed code replaces it; renewals never get it. Two
+// campaigns whose windows overlap may not share a plan or pack (an empty list means all of them): 409
+// coupon.campaign_overlap. The campaign is a coupon (coupon_code) with one code of its own (code). Sends
+// campaign.started and campaign.ended.
+func (s *CampaignsService) CreateCampaign(ctx context.Context, req *CampaignInput, opts ...RequestOption) (*Campaign, error) {
+	if req == nil {
+		req = &CampaignInput{}
+	}
+	var body any = req
+	var out Campaign
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/campaigns", query: nil, body: body}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// EndCampaign: End a campaign now (purchases already made keep their discount) (DELETE /v1/campaigns/{code}).
+func (s *CampaignsService) EndCampaign(ctx context.Context, code string, opts ...RequestOption) (*Campaign, error) {
+	var out Campaign
+	if err := s.c.do(ctx, requestSpec{method: http.MethodDelete, path: "/v1/campaigns/" + url.PathEscape(code), query: nil, body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 // ContractAcceptancesService is the contract acceptances namespace of the API.
@@ -2583,6 +2628,8 @@ func (s *PriceChangesService) WithdrawPriceChange(ctx context.Context, id string
 type PromotionCodesService service
 
 // ListPromotionCodes: Promotion codes, newest first (GET /v1/promotion-codes).
+//
+// The codes people type. A campaign's code is not listed here; see /v1/campaigns.
 func (s *PromotionCodesService) ListPromotionCodes(ctx context.Context, params *ListPromotionCodesParams, opts ...RequestOption) (*ListPromotionCodesResponse, error) {
 	var out ListPromotionCodesResponse
 	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/promotion-codes", query: params.values(), body: nil}, &out, opts); err != nil {
@@ -3007,6 +3054,22 @@ func (s *SubscriptionsService) ApplyCoupon(ctx context.Context, id string, req *
 	var body any = req
 	var out Subscription
 	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/subscriptions/" + url.PathEscape(id) + "/coupon", query: nil, body: body}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// EndTrial: End a running trial now (POST /v1/subscriptions/{id}/end-trial).
+//
+// The subscription becomes active now, as if its trial had been that long: a subscription billed in advance has
+// its first fee due now and its billing periods start now; for one billed in arrears whose version has
+// `prorate_after_trial`, the first period is charged from now. The plan's normal limits replace the trial
+// limits at once. Sends `subscription.updated` and `entitlement.updated`. A subscription with no trial running
+// is refused with `plans.subscription.not_trialing`; one a payment provider runs with
+// `plans.subscription.run_by_provider`.
+func (s *SubscriptionsService) EndTrial(ctx context.Context, id string, opts ...RequestOption) (*Subscription, error) {
+	var out Subscription
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/subscriptions/" + url.PathEscape(id) + "/end-trial", query: nil, body: nil}, &out, opts); err != nil {
 		return nil, err
 	}
 	return &out, nil

@@ -220,6 +220,40 @@ timestamps more than `tolerance` from the clock refused (`0` means five minutes)
 constants list the event type names; `InvoiceEventData`, `CreditNoteEventData`, `SubscriptionEventData`,
 `PaymentLinkEventData` and `CreditsEventData` type the payloads. Answer `2xx` within 10 seconds.
 
+## Caching entitlements and the catalog
+
+`payrudder.NewCache` keeps entitlement checks and the catalog (plans with their current prices, active credit packs, running campaigns) in a store every instance of your app shares. The default is a `MemoryStore` in the process; for Redis, copy this go-redis adapter (the SDK does not import go-redis):
+
+```go
+type redisStore struct{ c *redis.Client }
+
+func (s redisStore) Get(ctx context.Context, k string) (string, bool, error) {
+	v, err := s.c.Get(ctx, k).Result()
+	if errors.Is(err, redis.Nil) {
+		return "", false, nil
+	}
+	return v, err == nil, err
+}
+func (s redisStore) Set(ctx context.Context, k, v string, ttl time.Duration) error { return s.c.Set(ctx, k, v, ttl).Err() }
+func (s redisStore) Delete(ctx context.Context, k string) error                    { return s.c.Del(ctx, k).Err() }
+```
+
+(`internal/redisstore` runs this adapter against a real Redis; it is a module of its own so the SDK keeps no dependency.)
+
+```go
+cache := payrudder.NewCache(client, payrudder.CacheOptions{Store: redisStore{rdb}, OnError: func(err error) { log.Print(err) }})
+
+status, err := cache.Entitlement(ctx, customer, "api_calls") // also cache.Entitlements, cache.Catalog
+_, err = cache.RecordUsage(ctx, payrudder.IncomingEvent{CustomerExternalID: customer, MeterCode: "api_calls", Quantity: "1", EventTime: time.Now()})
+
+// in your webhook handler, after ConstructEvent verified the delivery
+cache.HandleWebhook(ctx, event)
+```
+
+- Entitlements are served for `EntitlementTTL` (default 60 s), the catalog for `CatalogTTL` (default 10 min); with webhooks wired a change shows at once, without them it can be that stale.
+- `RecordUsage` counts the event into the cached entitlement, so a hard limit is enforced without a refetch after every event.
+- Keys start with `Prefix` (default `payrudder:`) and the key's environment (`client.Environment()`), so test and live never share entries. A store error never fails a call: it reads through to the API and goes to `OnError`. Concurrent misses of one key share one request.
+
 ## Uploads
 
 `Assets.UploadAssets(ctx, []payrudder.AssetFile{...})` builds the multipart request (up to 20 files, 25 MiB each). Larger

@@ -42,6 +42,7 @@ final class Subscription implements Model
      * @param string|null $couponCode
      * @param int|null $quantity
      * @param string|null $changedFromId
+     * @param string|null $trialSkipped
      */
     public function __construct(
         public readonly ?string $id = null,
@@ -67,6 +68,7 @@ final class Subscription implements Model
         public readonly ?string $couponCode = null,
         public readonly ?int $quantity = null,
         public readonly ?string $changedFromId = null,
+        public readonly ?string $trialSkipped = null,
     ) {}
 
     /**
@@ -98,6 +100,7 @@ final class Subscription implements Model
             couponCode: Cast::string($data['coupon_code'] ?? null),
             quantity: Cast::int($data['quantity'] ?? null),
             changedFromId: Cast::string($data['changed_from_id'] ?? null),
+            trialSkipped: Cast::string($data['trial_skipped'] ?? null),
         );
     }
 
@@ -130,6 +133,7 @@ final class Subscription implements Model
             'coupon_code' => $this->couponCode,
             'quantity' => $this->quantity,
             'changed_from_id' => $this->changedFromId,
+            'trial_skipped' => $this->trialSkipped,
         ]);
     }
 }

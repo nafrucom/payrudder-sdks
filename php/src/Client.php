@@ -27,6 +27,8 @@ final class Client extends ResourceHolder
     public const VERSION = '0.0.0';
     public const DEFAULT_BASE_URL = 'http://localhost:42800';
 
+    private readonly string $environment;
+
     /**
      * @param string|null $apiKey `prk_test_...` or `prk_live_...`; defaults to $PAYRUDDER_API_KEY
      * @param string|null $baseUrl defaults to $PAYRUDDER_BASE_URL, then http://localhost:42800
@@ -68,6 +70,7 @@ final class Client extends ResourceHolder
             throw new ConfigurationException('maxRetries must not be negative');
         }
 
+        $this->environment = str_starts_with($apiKey, 'prk_test_') ? 'test' : 'live';
         $transport ??= self::defaultTransport($httpClient, $requestFactory, $streamFactory);
 
         parent::__construct(new Requester(
@@ -81,6 +84,12 @@ final class Client extends ResourceHolder
                 usleep((int) round($seconds * 1_000_000));
             },
         ));
+    }
+
+    /** The API key's environment: "test" for a `prk_test_` key, "live" for every other key. */
+    public function environment(): string
+    {
+        return $this->environment;
     }
 
     private static function defaultTransport(?ClientInterface $httpClient, ?RequestFactoryInterface $requestFactory, ?StreamFactoryInterface $streamFactory): TransportInterface

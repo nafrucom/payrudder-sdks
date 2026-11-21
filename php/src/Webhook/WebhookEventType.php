@@ -27,6 +27,7 @@ final class WebhookEventType
     public const SUBSCRIPTION_RESUMED = 'subscription.resumed';
     public const SUBSCRIPTION_MOVED_TO_PROVIDER = 'subscription.moved_to_provider';
     public const SUBSCRIPTION_TRIAL_WILL_END = 'subscription.trial_will_end';
+    public const SUBSCRIPTION_UPDATED = 'subscription.updated';
     public const PAYMENT_LINK_CREATED = 'payment_link.created';
     public const PAYMENT_LINK_PAID = 'payment_link.paid';
     public const PAYMENT_LINK_EXPIRED = 'payment_link.expired';
@@ -35,11 +36,16 @@ final class WebhookEventType
     public const CREDITS_LOW = 'credits.low';
     public const CUSTOMER_BLOCKED = 'customer.blocked';
     public const CUSTOMER_UNBLOCKED = 'customer.unblocked';
+    public const ENTITLEMENT_UPDATED = 'entitlement.updated';
     public const PRICE_CHANGE_SCHEDULED = 'price_change.scheduled';
+    public const CAMPAIGN_STARTED = 'campaign.started';
+    public const CAMPAIGN_ENDED = 'campaign.ended';
     public const CONTRACT_ACCEPTED = 'contract.accepted';
     public const CONTRACT_VERSION_PUBLISHED = 'contract.version_published';
     public const CONTRACT_WITHDRAWAL_REQUESTED = 'contract.withdrawal_requested';
     public const CONTRACT_WITHDRAWAL_DECIDED = 'contract.withdrawal_decided';
+    public const PLAN_CREATED = 'plan.created';
+    public const PLAN_VERSION_PUBLISHED = 'plan.version_published';
 
     /**
      * Every type an endpoint can subscribe to (all but `ping`).
@@ -66,6 +72,7 @@ final class WebhookEventType
             self::SUBSCRIPTION_RESUMED,
             self::SUBSCRIPTION_MOVED_TO_PROVIDER,
             self::SUBSCRIPTION_TRIAL_WILL_END,
+            self::SUBSCRIPTION_UPDATED,
             self::PAYMENT_LINK_CREATED,
             self::PAYMENT_LINK_PAID,
             self::PAYMENT_LINK_EXPIRED,
@@ -74,11 +81,16 @@ final class WebhookEventType
             self::CREDITS_LOW,
             self::CUSTOMER_BLOCKED,
             self::CUSTOMER_UNBLOCKED,
+            self::ENTITLEMENT_UPDATED,
             self::PRICE_CHANGE_SCHEDULED,
+            self::CAMPAIGN_STARTED,
+            self::CAMPAIGN_ENDED,
             self::CONTRACT_ACCEPTED,
             self::CONTRACT_VERSION_PUBLISHED,
             self::CONTRACT_WITHDRAWAL_REQUESTED,
             self::CONTRACT_WITHDRAWAL_DECIDED,
+            self::PLAN_CREATED,
+            self::PLAN_VERSION_PUBLISHED,
         ];
     }
 }

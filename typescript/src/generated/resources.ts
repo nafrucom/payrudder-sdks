@@ -17,6 +17,8 @@ import type {
   BillingRun,
   BlockCustomerRequest,
   BlocklistEntry,
+  Campaign,
+  CampaignInputParams,
   CancelSubscriptionQuery,
   CancelSubscriptionResponse,
   ChangePlanRequest,
@@ -130,6 +132,8 @@ import type {
   ListAuditEventsQuery,
   ListAuditEventsResponse,
   ListBlocklistResponse,
+  ListCampaignsQuery,
+  ListCampaignsResponse,
   ListContractAcceptancesQuery,
   ListContractAcceptancesResponse,
   ListContractVersionsQuery,
@@ -638,6 +642,41 @@ export class BlocklistResource {
    */
   removeBlocklistEntry(id: string, options?: RequestOptions): Promise<void> {
     return this.t.request<void>({ method: "DELETE", path: `/v1/blocklist/${seg(id)}`, response: "none" }, options);
+  }
+}
+
+export class CampaignsResource {
+  constructor(private readonly t: Transport) {}
+
+  /**
+   * Campaigns, latest start first
+   *
+   * Not paged: the response is the complete list.
+   *
+   * `GET /v1/campaigns`
+   */
+  listCampaigns(query?: ListCampaignsQuery, options?: RequestOptions): Promise<ListCampaignsResponse> {
+    return this.t.request<ListCampaignsResponse>({ method: "GET", path: `/v1/campaigns`, query, response: "json" }, options);
+  }
+
+  /**
+   * Start a campaign, a discount that applies without a code
+   *
+   * A campaign takes its discount off new purchases of its plans (new subscriptions) or credit packs from start_time up to expire_time, without a typed code. A typed code replaces it; renewals never get it. Two campaigns whose windows overlap may not share a plan or pack (an empty list means all of them): 409 coupon.campaign_overlap. The campaign is a coupon (coupon_code) with one code of its own (code). Sends campaign.started and campaign.ended.
+   *
+   * `POST /v1/campaigns`
+   */
+  createCampaign(body: CampaignInputParams, options?: RequestOptions): Promise<Campaign> {
+    return this.t.request<Campaign>({ method: "POST", path: `/v1/campaigns`, body, bodyKind: "json", response: "json" }, options);
+  }
+
+  /**
+   * End a campaign now (purchases already made keep their discount)
+   *
+   * `DELETE /v1/campaigns/{code}`
+   */
+  endCampaign(code: string, options?: RequestOptions): Promise<Campaign> {
+    return this.t.request<Campaign>({ method: "DELETE", path: `/v1/campaigns/${seg(code)}`, response: "json" }, options);
   }
 }
 
@@ -1943,6 +1982,8 @@ export class PromotionCodesResource {
   /**
    * Promotion codes, newest first
    *
+   * The codes people type. A campaign's code is not listed here; see /v1/campaigns.
+   *
    * `GET /v1/promotion-codes`
    */
   listPromotionCodes(query?: ListPromotionCodesQuery, options?: RequestOptions): Promise<ListPromotionCodesResponse> {
@@ -2175,6 +2216,20 @@ export class SubscriptionsResource {
    */
   resumeSubscription(id: string, options?: RequestOptions): Promise<Subscription> {
     return this.t.request<Subscription>({ method: "POST", path: `/v1/subscriptions/${seg(id)}/resume`, response: "json" }, options);
+  }
+
+  /**
+   * End a running trial now
+   *
+   * The subscription becomes active now, as if its trial had been that long: a subscription billed in advance has its first fee due now and its billing
+   * periods start now; for one billed in arrears whose version has `prorate_after_trial`, the first period is charged from now. The plan's normal limits
+   * replace the trial limits at once. Sends `subscription.updated` and `entitlement.updated`. A subscription with no trial running is refused with
+   * `plans.subscription.not_trialing`; one a payment provider runs with `plans.subscription.run_by_provider`.
+   *
+   * `POST /v1/subscriptions/{id}/end-trial`
+   */
+  endTrial(id: string, options?: RequestOptions): Promise<Subscription> {
+    return this.t.request<Subscription>({ method: "POST", path: `/v1/subscriptions/${seg(id)}/end-trial`, response: "json" }, options);
   }
 
   /**

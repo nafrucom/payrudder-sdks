@@ -115,6 +115,26 @@ export async function middleware(req: Request) {
 - The trade-off is staleness: a customer who reaches a hard limit stays allowed until the answer is refreshed. Call `limits.invalidate(customer, meter)` after recording usage that matters, or lower `ttlMs`.
 - The cache lives in one process (one server, one edge isolate) and is not shared between instances.
 
+## Caching entitlements and the catalog in Redis
+
+`PayrudderCache` keeps entitlement checks and the catalog (plans with their current prices, active credit packs, running campaigns) in a store every instance of your app shares. Pass the Redis client you already have (ioredis or node-redis v4); without a store it uses a `MemoryStore` in the process. Forward verified webhooks to it, so a change in Payrudder invalidates the cached answers at once.
+
+```ts
+import { PayrudderCache, RedisStore, constructEvent } from "@payrudder/sdk";
+
+const cache = new PayrudderCache(payrudder, { store: new RedisStore(redis), onError: console.warn });
+
+const status = await cache.entitlement(customer, "api_calls"); // also cache.entitlements(customer), cache.catalog()
+await cache.recordUsage({ customer_external_id: customer, meter_code: "api_calls", quantity: "1", event_time: new Date() });
+
+// in your webhook route, after verifying the delivery
+await cache.handleWebhook(await constructEvent(rawBody, signature, secret));
+```
+
+- Entitlements are served for `entitlementTtlMs` (default 60 s), the catalog for `catalogTtlMs` (default 10 min); with webhooks wired a change shows at once, without them it can be that stale.
+- `recordUsage` counts the event into the cached entitlement, so a hard limit is enforced without a refetch after every event.
+- Keys start with `prefix` (default `payrudder:`) and the key's environment, so test and live never share entries. A store error never fails a call: it reads through to the API and goes to `onError`.
+
 ## Errors
 
 Every failed call throws a `PayrudderError` built from the API's `Error` envelope:

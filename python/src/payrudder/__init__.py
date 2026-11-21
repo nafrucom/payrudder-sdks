@@ -3,6 +3,7 @@
 from . import models
 from ._client import AsyncPayrudder, Payrudder
 from ._version import __version__
+from .cache import CacheStore, Catalog, CatalogPlan, MemoryStore, PayrudderCache, RedisStore
 from .errors import (
     APIConnectionError,
     APIError,
@@ -21,10 +22,12 @@ from .errors import (
 from .types import FileUpload, RequestOptions
 from .webhooks import (
     EVENT_TYPES,
+    CampaignEventData,
     CreditNoteEventData,
     CreditsLowEventData,
     CreditsPurchasedEventData,
     CustomerBlockEventData,
+    EntitlementUpdatedEventData,
     EventType,
     InvoiceEventData,
     PaymentDisputedEventData,
@@ -43,23 +46,31 @@ __all__ = [
     "APITimeoutError",
     "AsyncPayrudder",
     "AuthenticationError",
+    "CacheStore",
+    "CampaignEventData",
+    "Catalog",
+    "CatalogPlan",
     "ConfigurationError",
     "ConflictError",
     "CreditNoteEventData",
     "CreditsLowEventData",
     "CreditsPurchasedEventData",
     "CustomerBlockEventData",
+    "EntitlementUpdatedEventData",
     "EventType",
     "FileUpload",
     "InvoiceEventData",
+    "MemoryStore",
     "NotFoundError",
     "PaymentDisputedEventData",
     "PaymentLinkEventData",
     "Payrudder",
+    "PayrudderCache",
     "PayrudderError",
     "PermissionDeniedError",
     "PriceChangeScheduledEventData",
     "RateLimitError",
+    "RedisStore",
     "RequestOptions",
     "ServerError",
     "SubscriptionEventData",

@@ -39,6 +39,7 @@ dev = [
   "pyyaml>=6",
   "types-PyYAML",
   "build",
+  "redis>=5",  # tests/test_redis.py only, against a real Redis when PAYRUDDER_TEST_REDIS_URL is set; the SDK does not import it
 ]
 
 [tool.hatch.build.targets.wheel]

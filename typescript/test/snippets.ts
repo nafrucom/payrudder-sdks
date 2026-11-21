@@ -1,4 +1,4 @@
-import { Payrudder, constructEvent, WebhookEventTypes, type Invoice } from "../src/index";
+import { Payrudder, PayrudderCache, RedisStore, type RedisLike, constructEvent, WebhookEventTypes, type Invoice } from "../src/index";
 
 // Compile-only: keeps the README snippets honest.
 export async function snippets(): Promise<void> {
@@ -15,4 +15,8 @@ export async function snippets(): Promise<void> {
   const inv: Invoice = await payrudder.invoices.getInvoice("id");
   console.log(inv.total_minor satisfies string | undefined);
   await payrudder.paymentLinks.createPaymentLink({ kind: "adhoc", amount_minor: 1000n });
+  const cache = new PayrudderCache(payrudder, { store: new RedisStore({} as RedisLike), onError: console.warn });
+  console.log((await cache.entitlement("cus_42", "api_calls")).allowed, (await cache.catalog()).plans[0]?.version.prices);
+  await cache.recordUsage({ customer_external_id: "cus_42", meter_code: "api_calls", quantity: "1", event_time: new Date() });
+  await cache.handleWebhook(event);
 }

@@ -118,6 +118,7 @@ class _CustomerRequired(TypedDict):
     service_suspended: bool
     phone: str
     tax_id_warning: str
+    trial_used: bool
 
 
 class Customer(_CustomerRequired, total=False):
@@ -784,6 +785,8 @@ class PublishPlanVersionRequest(TypedDict, total=False):
     entitlements: list[EntitlementInput]
     trial_days: int
     prorate_after_trial: bool
+    trial_once_per_customer: bool
+    trial_entitlements: list[EntitlementInput]
 
 
 class PricePerUnit(TypedDict):
@@ -841,6 +844,8 @@ class PlanVersion(TypedDict):
     publish_time: str | None
     trial_days: int
     prorate_after_trial: bool
+    trial_once_per_customer: bool
+    trial_entitlements: list[Entitlement]
     fees: list[CurrencyFee]
 
 
@@ -876,6 +881,7 @@ class Subscription(TypedDict):
     coupon_code: str
     quantity: int
     changed_from_id: str
+    trial_skipped: str
 
 
 class _ListSubscriptionsResponseRequired(TypedDict):
@@ -1184,7 +1190,7 @@ class ListWebhookEndpointsResponse(TypedDict):
     endpoints: list[WebhookEndpoint]
 
 
-WebhookEventType = Literal["invoice.finalized", "invoice.paid", "invoice.voided", "invoice.uncollectible", "credit_note.created", "credit_note.refunded", "credit_note.refund_failed", "subscription.created", "subscription.changed", "subscription.change_scheduled", "subscription.cancelled", "subscription.cancellation_scheduled", "subscription.cancellation_withdrawn", "subscription.paused", "subscription.resumed", "subscription.moved_to_provider", "subscription.trial_will_end", "payment_link.created", "payment_link.paid", "payment_link.expired", "payment.disputed", "credits.purchased", "credits.low", "customer.blocked", "customer.unblocked", "price_change.scheduled", "contract.accepted", "contract.version_published", "contract.withdrawal_requested", "contract.withdrawal_decided"]
+WebhookEventType = Literal["invoice.finalized", "invoice.paid", "invoice.voided", "invoice.uncollectible", "credit_note.created", "credit_note.refunded", "credit_note.refund_failed", "subscription.created", "subscription.changed", "subscription.change_scheduled", "subscription.cancelled", "subscription.cancellation_scheduled", "subscription.cancellation_withdrawn", "subscription.paused", "subscription.resumed", "subscription.moved_to_provider", "subscription.trial_will_end", "subscription.updated", "payment_link.created", "payment_link.paid", "payment_link.expired", "payment.disputed", "credits.purchased", "credits.low", "customer.blocked", "customer.unblocked", "entitlement.updated", "price_change.scheduled", "campaign.started", "campaign.ended", "contract.accepted", "contract.version_published", "contract.withdrawal_requested", "contract.withdrawal_decided", "plan.created", "plan.version_published"]
 
 
 class _CreateWebhookEndpointRequestRequired(TypedDict):
@@ -1300,8 +1306,7 @@ class CreatePromotionCodes(TypedDict, total=False):
     prefix: str
 
 
-class PromotionCode(TypedDict):
-    """What a customer types. Many codes point to one coupon, each with its own limit, expiry and restrictions."""
+class _PromotionCodeRequired(TypedDict):
     id: str
     coupon_id: str
     coupon_code: str
@@ -1321,6 +1326,12 @@ class PromotionCode(TypedDict):
     create_time: str | None
 
 
+class PromotionCode(_PromotionCodeRequired, total=False):
+    """What a customer types. Many codes point to one coupon, each with its own limit, expiry and restrictions."""
+    automatic: bool
+    start_time: str | None
+
+
 class CreatePromotionCodesResponse(TypedDict):
     codes: list[PromotionCode]
 
@@ -1329,6 +1340,54 @@ class ListPromotionCodesResponse(TypedDict):
     codes: list[PromotionCode]
     next_page_token: str
     total: int
+
+
+class Campaign(TypedDict):
+    """A discount that new purchases get without a code, from start_time up to expire_time"""
+    code: str
+    name: str
+    status: Literal["upcoming", "running", "ended"]
+    start_time: str
+    expire_time: str
+    target: Literal["plans", "packs"]
+    plans: list[str]
+    packs: list[str]
+    percent_bps: int
+    amount_minor: int
+    currency: str
+    bonus_percent_bps: int
+    duration: Literal["COUPON_DURATION_UNSPECIFIED", "COUPON_DURATION_ONCE", "COUPON_DURATION_REPEATING", "COUPON_DURATION_FOREVER"]
+    duration_periods: int
+    max_redemptions: int
+    redeemed: int
+    first_purchase_only: bool
+    one_per_customer: bool
+    coupon_code: str
+
+
+class ListCampaignsResponse(TypedDict):
+    campaigns: list[Campaign]
+
+
+class _CampaignInputRequired(TypedDict):
+    name: str
+    target: Literal["plans", "packs"]
+    start_time: str | datetime
+    expire_time: str | datetime
+
+
+class CampaignInput(_CampaignInputRequired, total=False):
+    percent_bps: int
+    amount_minor: int
+    currency: str
+    bonus_percent_bps: int
+    duration: Literal["COUPON_DURATION_ONCE", "COUPON_DURATION_REPEATING", "COUPON_DURATION_FOREVER"]
+    duration_periods: int
+    plans: list[str]
+    packs: list[str]
+    max_redemptions: int
+    first_purchase_only: bool
+    one_per_customer: bool
 
 
 class CouponRedemption(TypedDict):

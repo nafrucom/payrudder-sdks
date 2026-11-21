@@ -21,6 +21,8 @@ final class PublishPlanVersionRequest implements RequestBody
      * @param list<EntitlementInput>|null $entitlements
      * @param int|null $trialDays
      * @param bool|null $prorateAfterTrial
+     * @param bool|null $trialOncePerCustomer
+     * @param list<EntitlementInput>|null $trialEntitlements
      */
     public function __construct(
         public readonly ?int $baseFeeMinor = null,
@@ -29,6 +31,8 @@ final class PublishPlanVersionRequest implements RequestBody
         public readonly ?array $entitlements = null,
         public readonly ?int $trialDays = null,
         public readonly ?bool $prorateAfterTrial = null,
+        public readonly ?bool $trialOncePerCustomer = null,
+        public readonly ?array $trialEntitlements = null,
     ) {}
 
     /**
@@ -43,6 +47,8 @@ final class PublishPlanVersionRequest implements RequestBody
             'entitlements' => Cast::wire($this->entitlements),
             'trial_days' => $this->trialDays,
             'prorate_after_trial' => $this->prorateAfterTrial,
+            'trial_once_per_customer' => $this->trialOncePerCustomer,
+            'trial_entitlements' => Cast::wire($this->trialEntitlements),
         ]);
     }
 }
