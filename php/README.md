@@ -2,7 +2,6 @@
 
 PHP client for the tenant API of [Payrudder](https://payrudder.com) (`/v1/*`, authenticated with an API key) and verification of webhook deliveries.
 
-> **Pre-release.** The package version is `0.0.0`. Nothing is published to Packagist and no version is tagged until the whole app is finished.
 
 - PHP 8.1+, 64-bit, `ext-json`. No other runtime package: the default transport is `ext-curl`.
 - Typed readonly models and backed enums, `declare(strict_types=1)` everywhere, PHPStan level max.

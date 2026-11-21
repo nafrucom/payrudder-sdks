@@ -1,7 +1,7 @@
 {
   "name": "@payrudder/sdk",
-  "version": "0.0.0",
-  "description": "TypeScript/JavaScript SDK of the Payrudder billing API (pre-release)",
+  "version": "0.1.0",
+  "description": "TypeScript/JavaScript SDK of the Payrudder billing API",
   "keywords": [
     "payrudder",
     "billing",
@@ -18,7 +18,6 @@
     "url": "git+https://github.com/nafrucom/payrudder-sdks.git",
     "directory": "typescript"
   },
-  "private": true,
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,

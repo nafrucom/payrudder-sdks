@@ -24,7 +24,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client extends ResourceHolder
 {
-    public const VERSION = '0.0.0';
+    public const VERSION = '0.1.0';
     public const DEFAULT_BASE_URL = 'http://localhost:42800';
 
     private readonly string $environment;

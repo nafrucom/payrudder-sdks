@@ -14,6 +14,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	payrudder "github.com/nafrucom/payrudder-sdks/go"
 )
 
 const testKey = "prk_test_ab12cd34_s3cr3tS3cr3tS3cr3tS3cr3tS3cr3tS3"
@@ -315,7 +317,7 @@ func TestUsageErrorsExitWithTwo(t *testing.T) {
 	e.expect(0, "", "help")
 	contains(t, "help", e.out.String(), "webhooks listen", "events tail")
 	e.expect(0, "", "version")
-	contains(t, "version", e.out.String(), "payrudder 0.0.0")
+	contains(t, "version", e.out.String(), "payrudder "+payrudder.Version)
 	e.expect(0, "", "customers", "list", "-h")
 }
 

@@ -3,9 +3,6 @@
 Go client for the Payrudder tenant API (`/v1/*`, authenticated with an API key) and a verifier for webhook deliveries.
 Standard library only; Go 1.23 or newer.
 
-> **Pre-release.** The version is `0.0.0` and nothing is published or tagged: Payrudder is released as a whole, and
-> until then the API of this package can change. Use it from a clone of the repository (see Install).
-
 It covers the tenant API only: not `/admin/v1` (operator) and not `/app/v1` or `/auth` (console sessions).
 
 ## Install
@@ -282,7 +279,7 @@ payrudder subscriptions create --customer cus_42 --plan pro
 The key comes from `$PAYRUDDER_API_KEY` or the login, the address from `--base-url`, `$PAYRUDDER_BASE_URL` or the login. `webhooks listen` receives deliveries
 on `127.0.0.1:4242` (Payrudder has to be able to reach that address: a stack on your own machine can; a hosted one needs a tunnel and `--public-url`, which registers it
 as a temporary endpoint and deletes it when the command stops), verifies each with the secret, prints it, and passes it on unchanged. The documentation is in the docs
-site ("Command line"); `payrudder help` lists the commands. Pre-release like the package: not published.
+site ("Command line"); `payrudder help` lists the commands. Versioned with the package.
 
 ## Development
 

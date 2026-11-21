@@ -2,8 +2,7 @@
 
 Python client for the [Payrudder](https://payrudder.com) tenant API (`/v1/*`) and for verifying webhook deliveries.
 
-> **Pre-release (`0.0.0`).** Nothing is published to PyPI and no version is tagged until the whole platform is finished.
-> Install from this repository: `pip install ./sdk/python` (or `pip install -e ./sdk/python[dev]` to work on it).
+Install from this repository: `pip install ./sdk/python` (or `pip install -e ./sdk/python[dev]` to work on it).
 
 - Python 3.10+, fully typed (`py.typed`, checked with `mypy --strict`).
 - A sync client (`Payrudder`) and an async client (`AsyncPayrudder`) with the same methods.

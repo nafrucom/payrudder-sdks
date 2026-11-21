@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"sync"
 	"testing"
+
+	payrudder "github.com/nafrucom/payrudder-sdks/go"
 )
 
 func TestEventsSendAcceptedWithPropertiesAndAGeneratedKey(t *testing.T) {
@@ -304,7 +305,7 @@ func TestUserAgentIsTheCLI(t *testing.T) {
 	e := newEnv(t)
 	e.gw.json("GET /v1/customers", 200, page(nil, "customers", ""))
 	e.expect(0, "", "customers", "list")
-	if ua := e.gw.requests("GET", "/v1/customers")[0].ua; ua != fmt.Sprintf("payrudder-cli/%s", "0.0.0") {
+	if ua := e.gw.requests("GET", "/v1/customers")[0].ua; ua != "payrudder-cli/"+payrudder.Version {
 		t.Errorf("user agent %q", ua)
 	}
 }

@@ -8,8 +8,6 @@
 //	cust, err := client.Customers.GetCustomer(ctx, "cus_42")
 //	var perr *payrudder.Error
 //	if errors.As(err, &perr) && perr.Kind == payrudder.KindNotFound { ... }
-//
-// The version is 0.0.0 until the platform is released: nothing is published yet.
 package payrudder
 
 import (
@@ -26,8 +24,8 @@ import (
 	"time"
 )
 
-// Version is the SDK version. It stays 0.0.0 (pre-release) until Payrudder is released.
-const Version = "0.0.0"
+// Version is the SDK version.
+const Version = "0.1.0"
 
 // Defaults and environment variables.
 const (
@@ -93,7 +91,7 @@ func WithMaxRetries(n int) Option { return func(c *Client) { c.maxRetries = n } 
 // WithTransport sets the http.RoundTripper, for tests and for custom TLS, proxy or tracing.
 func WithTransport(rt http.RoundTripper) Option { return func(c *Client) { c.transport = rt } }
 
-// WithUserAgent replaces the User-Agent header (default payrudder-go/0.0.0).
+// WithUserAgent replaces the User-Agent header (default payrudder-go/<Version>).
 func WithUserAgent(ua string) Option { return func(c *Client) { c.userAgent = ua } }
 
 // WithRetryBackoff sets the first and the largest delay of the exponential backoff (default 500 ms and 8 s).

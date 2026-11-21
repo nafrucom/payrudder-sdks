@@ -2,26 +2,16 @@
 
 Client for the tenant API of Payrudder (`/v1/*`, authenticated with an API key) and webhook signature verification.
 
-> **Pre-release (`0.0.0`).** Nothing is published and no version is tagged until the whole platform is finished. The package is marked `private`. Until then, use it from a checkout of this repository.
 
 - Node 20+, browsers and edge runtimes (it only needs the global `fetch`, `crypto.subtle`, `AbortController` and `FormData`).
 - ESM and CommonJS builds with type declarations. `strict` TypeScript.
 - No runtime dependencies.
 - Licence: Apache License 2.0, see [`LICENSE`](LICENSE).
 
-## Install (from the repository)
+## Install
 
 ```sh
-cd sdk/typescript
-npm ci
-npm run build          # writes dist/ (ESM + CJS + .d.ts)
-npm pack               # writes payrudder-sdk-0.0.0.tgz, the tarball to install in your project
-```
-
-then, in your own project (`@payrudder/sdk` is not on npm, so the name alone does not resolve):
-
-```sh
-npm install /path/to/payrudder/sdk/typescript/payrudder-sdk-0.0.0.tgz
+npm install @payrudder/sdk
 ```
 
 Runnable programs (send a usage event, create a customer, list invoices, verify a webhook) are in [`examples/`](examples/README.md).

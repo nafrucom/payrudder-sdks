@@ -3,9 +3,9 @@
 All notable changes to the Payrudder PHP SDK (`payrudder/payrudder-php`). The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), the version numbers follow [Semantic Versioning](https://semver.org/).
 The four SDKs share one version number and are released together.
 
-Nothing has been published or tagged yet: the version stays `0.0.0` until the first release, so everything is listed under Unreleased.
-
 ## [Unreleased]
+
+## [0.1.0] - 2026-11-20
 
 ### Added
 - `Payrudder\Cache\PayrudderCache`: entitlement checks and the catalog kept in a store your workers share (`RedisStore` over Predis or phpredis, or `MemoryStore`), invalidated by webhooks through `handleWebhook`, with usage recorded through it counted into the cache. `Client::environment()` says whether the key is a test or a live one.
