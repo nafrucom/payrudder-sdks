@@ -2,7 +2,7 @@
 
 Five small programs: [connect a customer and check access](connect_and_check.py), [send a usage event](send_usage.py), [create a customer](create_customer.py), [list invoices](list_invoices.py) and [verify a webhook](verify_webhook.py). They import `payrudder`, as your own code will.
 
-Nothing is published: install the SDK from this checkout (`pip install ./sdk/python`), then
+Install the SDK (`pip install payrudder`), then
 
 ```sh
 export PAYRUDDER_API_KEY=prk_test_...             # a sandbox key

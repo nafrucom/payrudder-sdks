@@ -1,2 +1,2 @@
-/** Pre-release: nothing is published until the whole platform is finished. */
+/** Package version, the same in every Payrudder SDK. */
 export const VERSION = "0.2.0";

@@ -8,7 +8,7 @@
 //	payrudder webhooks listen --forward-to http://localhost:3000/webhooks/payrudder
 //	payrudder customers list
 //
-// Install from a checkout: go install ./cmd/payrudder (in sdk/go). It is pre-release like the SDK; nothing is published yet.
+// Install: go install github.com/nafrucom/payrudder-sdks/go/cmd/payrudder@latest
 package main
 
 import (

@@ -11,9 +11,7 @@ Official client libraries for the [Payrudder](https://payrudder.com) API: send u
 
 All four are generated from the same OpenAPI description, share one version number and follow the same design: one method per API operation, typed models, automatic pagination, retries with idempotency keys, and webhook signature verification. Each directory has its own README, changelog and `examples/`.
 
-> **Pre-release.** No version has been published yet; every package is `0.0.0` until the first release.
-
-## Install (after the first release)
+## Install
 
 ```bash
 go get github.com/nafrucom/payrudder-sdks/go

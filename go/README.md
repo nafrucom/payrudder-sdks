@@ -7,14 +7,11 @@ It covers the tenant API only: not `/admin/v1` (operator) and not `/app/v1` or `
 
 ## Install
 
-Not on a module proxy yet. From a checkout of this repository, in your own module:
-
 ```sh
-go mod edit -require=github.com/nafrucom/payrudder-sdks/go@v0.0.0
-go mod edit -replace=github.com/nafrucom/payrudder-sdks/go=/path/to/payrudder/sdk/go
+go get github.com/nafrucom/payrudder-sdks/go
 ```
 
-or add `./sdk/go` to your `go.work`. The import path is `github.com/nafrucom/payrudder-sdks/go`; the package is named
+The import path is `github.com/nafrucom/payrudder-sdks/go`; the package is named
 `payrudder`.
 
 Runnable programs (send a usage event, create a customer, list invoices, verify a webhook) are in [`examples/`](examples/README.md).
@@ -73,7 +70,7 @@ func main() {
 | `WithMaxRetries(n)` | 2 |
 | `WithRetryBackoff(base, max)` | 500 ms, 8 s |
 | `WithTransport(rt)` | `http.DefaultTransport`; any `http.RoundTripper`, handy in tests |
-| `WithUserAgent(ua)` | `payrudder-go/0.0.0` |
+| `WithUserAgent(ua)` | `payrudder-go/<Version>` |
 
 A `Client` is safe for concurrent use. Redirects are never followed, so the key cannot leak to another host.
 
@@ -292,10 +289,10 @@ files use `CreateUploadSession`, `PresignParts` and `CompleteUploadFile`.
 
 ## Command line
 
-`cmd/payrudder` is a command line built on this package (standard library only, so `go install` needs nothing else). From a checkout:
+`cmd/payrudder` is a command line built on this package (standard library only, so `go install` needs nothing else):
 
 ```sh
-cd sdk/go && go install ./cmd/payrudder            # or: go run ./cmd/payrudder <command>
+go install github.com/nafrucom/payrudder-sdks/go/cmd/payrudder@latest
 
 payrudder login                                     # stores the key (0600) in your config directory after the API accepted it
 payrudder events send --customer cus_42 --meter api_calls --quantity 3

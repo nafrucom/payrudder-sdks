@@ -2,7 +2,7 @@
 
 Five small scripts: [connect a customer and check access](connect_and_check.php), [send a usage event](send_usage.php), [create a customer](create_customer.php), [list invoices](list_invoices.php) and [verify a webhook](verify_webhook.php).
 
-Nothing is published: require the SDK from this checkout as the [SDK's README](../README.md#install) shows (or run `composer install` here), then
+Require the SDK (`composer require payrudder/payrudder-php`, or run `composer install` here), then
 
 ```sh
 export PAYRUDDER_API_KEY=prk_test_...             # a sandbox key

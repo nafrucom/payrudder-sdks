@@ -12,16 +12,9 @@ Licence: Apache License 2.0, see [`LICENSE`](LICENSE).
 
 ## Install
 
-Until the package is released, require it from a path or a VCS checkout of this repository (`/path/to/payrudder` is where you cloned it):
-
-```json
-{
-  "repositories": [{ "type": "path", "url": "/path/to/payrudder/sdk/php" }],
-  "require": { "payrudder/payrudder-php": "*@dev" }
-}
+```sh
+composer require payrudder/payrudder-php
 ```
-
-or, on the command line, `composer config repositories.payrudder path /path/to/payrudder/sdk/php && composer require payrudder/payrudder-php:"*@dev"`.
 
 Runnable programs (send a usage event, create a customer, list invoices, verify a webhook) are in [`examples/`](examples/README.md).
 
