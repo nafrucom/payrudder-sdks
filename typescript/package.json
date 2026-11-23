@@ -1,6 +1,6 @@
 {
   "name": "@payrudder/sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript/JavaScript SDK of the Payrudder billing API",
   "keywords": [
     "payrudder",

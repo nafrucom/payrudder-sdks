@@ -5,6 +5,8 @@ The four SDKs share one version number and are released together.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-23
+
 ### Added
 - `connect({ id, name, email, plan, member })`: creates or updates a customer by your own id (an organisation with its signed-in member) and returns the link to its customer page.
 - `access(customer, meters, { member })`: subscription, payment and limits in one check, with `allowed`, `reason` and `notices` to show in your app.
