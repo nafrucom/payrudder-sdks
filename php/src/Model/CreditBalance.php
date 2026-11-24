@@ -16,11 +16,15 @@ final class CreditBalance implements Model
 {
     /**
      * @param int|null $balance
+     * @param int|null $reserved
+     * @param int|null $available
      * @param string|null $nextExpireTime
      * @param list<CreditLot>|null $lots
      */
     public function __construct(
         public readonly ?int $balance = null,
+        public readonly ?int $reserved = null,
+        public readonly ?int $available = null,
         public readonly ?string $nextExpireTime = null,
         public readonly ?array $lots = null,
     ) {}
@@ -32,6 +36,8 @@ final class CreditBalance implements Model
     {
         return new static(
             balance: Cast::int($data['balance'] ?? null),
+            reserved: Cast::int($data['reserved'] ?? null),
+            available: Cast::int($data['available'] ?? null),
             nextExpireTime: Cast::string($data['next_expire_time'] ?? null),
             lots: Cast::models(CreditLot::class, $data['lots'] ?? null),
         );
@@ -44,6 +50,8 @@ final class CreditBalance implements Model
     {
         return Cast::compact([
             'balance' => Cast::int64($this->balance),
+            'reserved' => Cast::int64($this->reserved),
+            'available' => Cast::int64($this->available),
             'next_expire_time' => $this->nextExpireTime,
             'lots' => Cast::wire($this->lots),
         ]);

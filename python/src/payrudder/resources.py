@@ -363,6 +363,30 @@ class CustomersResource:
             if token is None:
                 return
 
+    def list_credit_holds(self, external_id: str, *, status: Literal["held", "committed", "released", "expired"] | None = None, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.CreditHoldPage:
+        """A customer's credit holds, newest first.
+
+        ``GET /v1/customers/{external_id}/credits/holds``
+        """
+        return cast("m.CreditHoldPage", self._client._request("GET", f"/v1/customers/{_p(external_id)}/credits/holds", query={"status": status, "page_size": page_size, "page_token": page_token}, response_wire='CreditHoldPage', options=options))
+
+    def iter_credit_holds(self, external_id: str, *, status: Literal["held", "committed", "released", "expired"] | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> Iterator[m.CreditHold]:
+        """Every item of ``list_credit_holds``, following ``next_page_token`` until the last page."""
+        token: str | None = None
+        while True:
+            page = self.list_credit_holds(external_id, status=status, page_size=page_size, options=options, page_token=token)
+            yield from page.get("holds", [])
+            token = page.get("next_page_token") or None
+            if token is None:
+                return
+
+    def reserve_credits(self, external_id: str, body: m.CreditReserveInput, *, options: RequestOptions | None = None) -> m.CreditHoldResult:
+        """Set credits aside for work that has started.
+
+        ``POST /v1/customers/{external_id}/credits/holds``
+        """
+        return cast("m.CreditHoldResult", self._client._request("POST", f"/v1/customers/{_p(external_id)}/credits/holds", body=body, body_wire='CreditReserveInput', response_wire='CreditHoldResult', options=options))
+
     def grant_customer_coupon(self, external_id: str, body: m.GrantCustomerCouponRequest, *, options: RequestOptions | None = None) -> m.GrantCustomerCouponResponse:
         """Give a customer a coupon that their next eligible checkout uses without a code.
 
@@ -896,6 +920,34 @@ class CreditPacksResource:
         ``POST /v1/credit-packs/{id}/deactivate``
         """
         return cast("m.EmptyObject", self._client._request("POST", f"/v1/credit-packs/{_p(id)}/deactivate", options=options))
+
+
+class CreditHoldsResource:
+    """``/v1/credit-holds`` and related operations."""
+
+    def __init__(self, client: Payrudder) -> None:
+        self._client = client
+
+    def get_credit_hold(self, id: str, *, options: RequestOptions | None = None) -> m.CreditHold:
+        """One credit hold.
+
+        ``GET /v1/credit-holds/{id}``
+        """
+        return cast("m.CreditHold", self._client._request("GET", f"/v1/credit-holds/{_p(id)}", response_wire='CreditHold', options=options))
+
+    def commit_credit_hold(self, id: str, body: m.CreditCommitInput, *, options: RequestOptions | None = None) -> m.CreditHoldResult:
+        """Consume what the work used and give the rest back.
+
+        ``POST /v1/credit-holds/{id}/commit``
+        """
+        return cast("m.CreditHoldResult", self._client._request("POST", f"/v1/credit-holds/{_p(id)}/commit", body=body, body_wire='CreditCommitInput', response_wire='CreditHoldResult', options=options))
+
+    def release_credit_hold(self, id: str, *, options: RequestOptions | None = None) -> m.CreditHoldResult:
+        """Give a hold back whole.
+
+        ``POST /v1/credit-holds/{id}/release``
+        """
+        return cast("m.CreditHoldResult", self._client._request("POST", f"/v1/credit-holds/{_p(id)}/release", response_wire='CreditHoldResult', options=options))
 
 
 class CreditsResource:
@@ -1909,6 +1961,7 @@ class Resources:
     tax_rates: TaxRatesResource
     dunning_settings: DunningSettingsResource
     credit_packs: CreditPacksResource
+    credit_holds: CreditHoldsResource
     credits: CreditsResource
     webhook_endpoints: WebhookEndpointsResource
     webhook_deliveries: WebhookDeliveriesResource
@@ -1951,6 +2004,7 @@ class Resources:
         self.tax_rates = TaxRatesResource(client)
         self.dunning_settings = DunningSettingsResource(client)
         self.credit_packs = CreditPacksResource(client)
+        self.credit_holds = CreditHoldsResource(client)
         self.credits = CreditsResource(client)
         self.webhook_endpoints = WebhookEndpointsResource(client)
         self.webhook_deliveries = WebhookDeliveriesResource(client)
@@ -2325,6 +2379,31 @@ class AsyncCustomersResource:
             token = page.get("next_page_token") or None
             if token is None:
                 return
+
+    async def list_credit_holds(self, external_id: str, *, status: Literal["held", "committed", "released", "expired"] | None = None, page_size: int | None = None, page_token: str | None = None, options: RequestOptions | None = None) -> m.CreditHoldPage:
+        """A customer's credit holds, newest first.
+
+        ``GET /v1/customers/{external_id}/credits/holds``
+        """
+        return cast("m.CreditHoldPage", await self._client._request("GET", f"/v1/customers/{_p(external_id)}/credits/holds", query={"status": status, "page_size": page_size, "page_token": page_token}, response_wire='CreditHoldPage', options=options))
+
+    async def iter_credit_holds(self, external_id: str, *, status: Literal["held", "committed", "released", "expired"] | None = None, page_size: int | None = None, options: RequestOptions | None = None) -> AsyncIterator[m.CreditHold]:
+        """Every item of ``list_credit_holds``, following ``next_page_token`` until the last page."""
+        token: str | None = None
+        while True:
+            page = await self.list_credit_holds(external_id, status=status, page_size=page_size, options=options, page_token=token)
+            for item in page.get("holds", []):
+                yield item
+            token = page.get("next_page_token") or None
+            if token is None:
+                return
+
+    async def reserve_credits(self, external_id: str, body: m.CreditReserveInput, *, options: RequestOptions | None = None) -> m.CreditHoldResult:
+        """Set credits aside for work that has started.
+
+        ``POST /v1/customers/{external_id}/credits/holds``
+        """
+        return cast("m.CreditHoldResult", await self._client._request("POST", f"/v1/customers/{_p(external_id)}/credits/holds", body=body, body_wire='CreditReserveInput', response_wire='CreditHoldResult', options=options))
 
     async def grant_customer_coupon(self, external_id: str, body: m.GrantCustomerCouponRequest, *, options: RequestOptions | None = None) -> m.GrantCustomerCouponResponse:
         """Give a customer a coupon that their next eligible checkout uses without a code.
@@ -2862,6 +2941,34 @@ class AsyncCreditPacksResource:
         ``POST /v1/credit-packs/{id}/deactivate``
         """
         return cast("m.EmptyObject", await self._client._request("POST", f"/v1/credit-packs/{_p(id)}/deactivate", options=options))
+
+
+class AsyncCreditHoldsResource:
+    """``/v1/credit-holds`` and related operations."""
+
+    def __init__(self, client: AsyncPayrudder) -> None:
+        self._client = client
+
+    async def get_credit_hold(self, id: str, *, options: RequestOptions | None = None) -> m.CreditHold:
+        """One credit hold.
+
+        ``GET /v1/credit-holds/{id}``
+        """
+        return cast("m.CreditHold", await self._client._request("GET", f"/v1/credit-holds/{_p(id)}", response_wire='CreditHold', options=options))
+
+    async def commit_credit_hold(self, id: str, body: m.CreditCommitInput, *, options: RequestOptions | None = None) -> m.CreditHoldResult:
+        """Consume what the work used and give the rest back.
+
+        ``POST /v1/credit-holds/{id}/commit``
+        """
+        return cast("m.CreditHoldResult", await self._client._request("POST", f"/v1/credit-holds/{_p(id)}/commit", body=body, body_wire='CreditCommitInput', response_wire='CreditHoldResult', options=options))
+
+    async def release_credit_hold(self, id: str, *, options: RequestOptions | None = None) -> m.CreditHoldResult:
+        """Give a hold back whole.
+
+        ``POST /v1/credit-holds/{id}/release``
+        """
+        return cast("m.CreditHoldResult", await self._client._request("POST", f"/v1/credit-holds/{_p(id)}/release", response_wire='CreditHoldResult', options=options))
 
 
 class AsyncCreditsResource:
@@ -3891,6 +3998,7 @@ class AsyncResources:
     tax_rates: AsyncTaxRatesResource
     dunning_settings: AsyncDunningSettingsResource
     credit_packs: AsyncCreditPacksResource
+    credit_holds: AsyncCreditHoldsResource
     credits: AsyncCreditsResource
     webhook_endpoints: AsyncWebhookEndpointsResource
     webhook_deliveries: AsyncWebhookDeliveriesResource
@@ -3933,6 +4041,7 @@ class AsyncResources:
         self.tax_rates = AsyncTaxRatesResource(client)
         self.dunning_settings = AsyncDunningSettingsResource(client)
         self.credit_packs = AsyncCreditPacksResource(client)
+        self.credit_holds = AsyncCreditHoldsResource(client)
         self.credits = AsyncCreditsResource(client)
         self.webhook_endpoints = AsyncWebhookEndpointsResource(client)
         self.webhook_deliveries = AsyncWebhookDeliveriesResource(client)

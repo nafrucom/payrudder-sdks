@@ -108,7 +108,12 @@ MODELS: dict[str, dict[str, Any]] = {
     },
     'CreditBalance': {
         'balance': ('int',),
+        'reserved': ('int',),
+        'available': ('int',),
         'lots': ('list', ('model', 'CreditLot')),
+    },
+    'CreditCommitInput': {
+        'lines': ('list', ('model', 'CreditHoldLine')),
     },
     'CreditConsumeInput': {
         'credits': ('int',),
@@ -116,8 +121,26 @@ MODELS: dict[str, dict[str, Any]] = {
     'CreditGrantInput': {
         'credits': ('int',),
     },
+    'CreditHold': {
+        'credits': ('int',),
+        'committed': ('int',),
+        'lines': ('list', ('model', 'CreditHoldLine')),
+    },
+    'CreditHoldLine': {
+        'credits': ('int',),
+        'units': ('int',),
+    },
+    'CreditHoldPage': {
+        'holds': ('list', ('model', 'CreditHold')),
+    },
+    'CreditHoldResult': {
+        'hold': ('model', 'CreditHold'),
+        'balance': ('int',),
+        'available': ('int',),
+    },
     'CreditLedgerEntry': {
         'amount': ('int',),
+        'units': ('int',),
     },
     'CreditLedgerPage': {
         'entries': ('list', ('model', 'CreditLedgerEntry')),
@@ -125,6 +148,7 @@ MODELS: dict[str, dict[str, Any]] = {
     'CreditLot': {
         'granted': ('int',),
         'remaining': ('int',),
+        'reserved': ('int',),
     },
     'CreditNote': {
         'total_minor': ('int',),
@@ -140,6 +164,9 @@ MODELS: dict[str, dict[str, Any]] = {
     },
     'CreditPackList': {
         'packs': ('list', ('model', 'CreditPack')),
+    },
+    'CreditReserveInput': {
+        'credits': ('int',),
     },
     'CreditResult': {
         'balance': ('int',),
@@ -304,6 +331,8 @@ MODELS: dict[str, dict[str, Any]] = {
     'PlanVersion': {
         'base_fee_minor': ('int',),
         'prices': ('list', ('model', 'Price')),
+        'included_credits': ('int',),
+        'credit_rollover_cap': ('int',),
         'fees': ('list', ('model', 'CurrencyFee')),
     },
     'Price': {
@@ -353,6 +382,8 @@ MODELS: dict[str, dict[str, Any]] = {
         'base_fee_minor': ('int',),
         'fees': ('list', ('model', 'CurrencyFeeInput')),
         'prices': ('list', ('model', 'PriceInput')),
+        'included_credits': ('int',),
+        'credit_rollover_cap': ('int',),
     },
     'RequestContractWithdrawalRefundRequest': {
         'amount_minor': ('int',),

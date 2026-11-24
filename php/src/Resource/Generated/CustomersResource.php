@@ -26,8 +26,12 @@ use Payrudder\Model\CreatePortalLinkResponse;
 use Payrudder\Model\CreditBalance;
 use Payrudder\Model\CreditConsumeInput;
 use Payrudder\Model\CreditGrantInput;
+use Payrudder\Model\CreditHold;
+use Payrudder\Model\CreditHoldPage;
+use Payrudder\Model\CreditHoldResult;
 use Payrudder\Model\CreditLedgerEntry;
 use Payrudder\Model\CreditLedgerPage;
+use Payrudder\Model\CreditReserveInput;
 use Payrudder\Model\CreditResult;
 use Payrudder\Model\Customer;
 use Payrudder\Model\CustomerAccess;
@@ -703,6 +707,76 @@ final class CustomersResource extends AbstractResource
                 yield $item;
             }
         }
+    }
+
+    /**
+     * A customer's credit holds, newest first (GET /v1/customers/{external_id}/credits/holds).
+     *
+     * @param string $externalId
+     * @param string|null $status
+     * @param int|null $pageSize
+     * @param string|null $pageToken
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function listCreditHolds(string $externalId, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): CreditHoldPage
+    {
+        return CreditHoldPage::fromArray($this->call('GET', '/v1/customers/' . rawurlencode($externalId) . '/credits/holds', ['status' => $status, 'page_size' => $pageSize, 'page_token' => $pageToken], null, $options));
+    }
+
+    /**
+     * Walks every page of listCreditHolds, yielding one response per page. A page token passed in starts the walk there.
+     *
+     * @param string $externalId
+     * @param string|null $status
+     * @param int|null $pageSize
+     * @param string|null $pageToken
+     * @param RequestOptions|null $options
+     *
+     * @return Generator<int, CreditHoldPage>
+     */
+    public function listCreditHoldsPages(string $externalId, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): Generator
+    {
+        do {
+            $page = $this->listCreditHolds(externalId: $externalId, status: $status, pageSize: $pageSize, pageToken: $pageToken, options: $options);
+            yield $page;
+            $pageToken = $page->nextPageToken;
+        } while ($pageToken !== null && $pageToken !== '');
+    }
+
+    /**
+     * Walks every page of listCreditHolds and yields the items one by one.
+     *
+     * @param string $externalId
+     * @param string|null $status
+     * @param int|null $pageSize
+     * @param string|null $pageToken
+     * @param RequestOptions|null $options
+     *
+     * @return Generator<int, CreditHold>
+     */
+    public function listCreditHoldsIterator(string $externalId, ?string $status = null, ?int $pageSize = null, ?string $pageToken = null, ?RequestOptions $options = null): Generator
+    {
+        foreach ($this->listCreditHoldsPages(externalId: $externalId, status: $status, pageSize: $pageSize, pageToken: $pageToken, options: $options) as $page) {
+            foreach ($page->holds ?? [] as $item) {
+                yield $item;
+            }
+        }
+    }
+
+    /**
+     * Set credits aside for work that has started (POST /v1/customers/{external_id}/credits/holds).
+     *
+     * @param string $externalId
+     * @param CreditReserveInput|array<string,mixed> $body
+     * @param RequestOptions|null $options
+     *
+     * @throws PayrudderException
+     */
+    public function reserveCredits(string $externalId, CreditReserveInput|array $body, ?RequestOptions $options = null): CreditHoldResult
+    {
+        return CreditHoldResult::fromArray($this->call('POST', '/v1/customers/' . rawurlencode($externalId) . '/credits/holds', [], Cast::body($body), $options));
     }
 
     /**

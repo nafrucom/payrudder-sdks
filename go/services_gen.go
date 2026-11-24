@@ -43,6 +43,8 @@ type services struct {
 	CouponRedemptions *CouponRedemptionsService
 	// Coupons groups the coupons operations.
 	Coupons *CouponsService
+	// CreditHolds groups the credit holds operations.
+	CreditHolds *CreditHoldsService
 	// CreditNotes groups the credit notes operations.
 	CreditNotes *CreditNotesService
 	// CreditPacks groups the credit packs operations.
@@ -115,6 +117,7 @@ func (s *services) initServices(c *Client) {
 	s.Contracts = (*ContractsService)(&service{c: c})
 	s.CouponRedemptions = (*CouponRedemptionsService)(&service{c: c})
 	s.Coupons = (*CouponsService)(&service{c: c})
+	s.CreditHolds = (*CreditHoldsService)(&service{c: c})
 	s.CreditNotes = (*CreditNotesService)(&service{c: c})
 	s.CreditPacks = (*CreditPacksService)(&service{c: c})
 	s.Credits = (*CreditsService)(&service{c: c})
@@ -1048,6 +1051,49 @@ func (s *CouponsService) CreatePromotionCodes(ctx context.Context, code string, 
 	return &out, nil
 }
 
+// CreditHoldsService is the credit holds namespace of the API.
+type CreditHoldsService service
+
+// GetCreditHold: One credit hold (GET /v1/credit-holds/{id}).
+func (s *CreditHoldsService) GetCreditHold(ctx context.Context, id string, opts ...RequestOption) (*CreditHold, error) {
+	var out CreditHold
+	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/credit-holds/" + url.PathEscape(id), query: nil, body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// CommitCreditHold: Consume what the work used and give the rest back (POST /v1/credit-holds/{id}/commit).
+//
+// Each line becomes a consume row of the ledger (one per lot it took from) with the line's `reason`, its
+// `units` and the hold's id. The lines may add up to at most the hold (409 `billing.credits.exceeds_hold`);
+// what they leave is given back. No lines release the whole hold. A repeat of a commit that adds up to the same
+// returns the first result with `replayed: true`. A released or expired hold cannot be committed (409
+// `billing.credits.hold_settled`, `billing.credits.hold_expired`).
+func (s *CreditHoldsService) CommitCreditHold(ctx context.Context, id string, req *CreditCommitInput, opts ...RequestOption) (*CreditHoldResult, error) {
+	if req == nil {
+		req = &CreditCommitInput{}
+	}
+	var body any = req
+	var out CreditHoldResult
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/credit-holds/" + url.PathEscape(id) + "/commit", query: nil, body: body}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ReleaseCreditHold: Give a hold back whole (POST /v1/credit-holds/{id}/release).
+//
+// A repeat, or a release of a hold that expired, changes nothing and answers `replayed true`. A committed hold
+// cannot be released (409 `billing.credits.hold_settled`).
+func (s *CreditHoldsService) ReleaseCreditHold(ctx context.Context, id string, opts ...RequestOption) (*CreditHoldResult, error) {
+	var out CreditHoldResult
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/credit-holds/" + url.PathEscape(id) + "/release", query: nil, body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // CreditNotesService is the credit notes namespace of the API.
 type CreditNotesService service
 
@@ -1163,8 +1209,8 @@ func (s *CreditsService) GetCreditSettings(ctx context.Context, opts ...RequestO
 
 // SetCreditSettings: Set the low-balance threshold (PUT /v1/credits/settings).
 //
-// A consume that takes a customer's balance from at least `low_threshold` credits to fewer announces
-// `credits.low` once (the webhook event). 0, the default, turns it off.
+// A consume or a hold that takes a customer's available credits from at least `low_threshold` to fewer
+// announces `credits.low` once (the webhook event). 0, the default, turns it off.
 func (s *CreditsService) SetCreditSettings(ctx context.Context, req *CreditSettingsInput, opts ...RequestOption) (*CreditSettings, error) {
 	if req == nil {
 		req = &CreditSettingsInput{}
@@ -1494,8 +1540,9 @@ func (s *CustomersService) GrantCustomerCoupon(ctx context.Context, externalID s
 
 // GetCreditBalance: What a customer can spend now (GET /v1/customers/{external_id}/credits).
 //
-// The balance leaves out credits whose time has passed. `lots` shows where it comes from, the credits that
-// expire first at the top.
+// The balance leaves out credits whose time has passed (except what a hold set aside from them). `reserved` is
+// what active holds set aside and `available` what is left to spend or hold. `lots` shows where it comes from,
+// the credits that expire first at the top.
 func (s *CustomersService) GetCreditBalance(ctx context.Context, externalID string, opts ...RequestOption) (*CreditBalance, error) {
 	var out CreditBalance
 	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/customers/" + url.PathEscape(externalID) + "/credits", query: nil, body: nil}, &out, opts); err != nil {
@@ -1506,9 +1553,9 @@ func (s *CustomersService) GetCreditBalance(ctx context.Context, externalID stri
 
 // ConsumeCredits: Spend credits (POST /v1/customers/{external_id}/credits/consume).
 //
-// Takes the credits that expire first. With too few credits nothing is taken and the answer is 409
-// `billing.credits.insufficient`. An `idempotency_key` (or the `Idempotency-Key` header) is required: a retried
-// call returns the first result with `replayed: true` instead of charging twice.
+// Takes the credits that expire first, never the ones a hold set aside. With too few available credits nothing
+// is taken and the answer is 409 `billing.credits.insufficient`. An `idempotency_key` (or the `Idempotency-Key`
+// header) is required: a retried call returns the first result with `replayed: true` instead of charging twice.
 //
 // Pass WithIdempotencyKey to make a retry safe.
 func (s *CustomersService) ConsumeCredits(ctx context.Context, externalID string, req *CreditConsumeInput, opts ...RequestOption) (*CreditResult, error) {
@@ -1537,6 +1584,54 @@ func (s *CustomersService) GrantCredits(ctx context.Context, externalID string, 
 	var body any = req
 	var out CreditResult
 	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/customers/" + url.PathEscape(externalID) + "/credits/grant", query: nil, body: body}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ListCreditHolds: A customer's credit holds, newest first (GET /v1/customers/{external_id}/credits/holds).
+func (s *CustomersService) ListCreditHolds(ctx context.Context, externalID string, params *ListCreditHoldsParams, opts ...RequestOption) (*CreditHoldPage, error) {
+	var out CreditHoldPage
+	if err := s.c.do(ctx, requestSpec{method: http.MethodGet, path: "/v1/customers/" + url.PathEscape(externalID) + "/credits/holds", query: params.values(), body: nil}, &out, opts); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ListCreditHoldsAll walks every page of ListCreditHolds and yields the items one by one. It stops at the first
+// error, which is yielded once.
+func (s *CustomersService) ListCreditHoldsAll(ctx context.Context, externalID string, params *ListCreditHoldsParams, opts ...RequestOption) iter.Seq2[CreditHold, error] {
+	return paginate(func(token string) ([]CreditHold, string, error) {
+		var p ListCreditHoldsParams
+		if params != nil {
+			p = *params
+		}
+		p.PageToken = token
+		page, err := s.ListCreditHolds(ctx, externalID, &p, opts...)
+		if err != nil {
+			return nil, "", err
+		}
+		return page.Holds, page.NextPageToken, nil
+	})
+}
+
+// ReserveCredits: Set credits aside for work that has started (POST /v1/customers/{external_id}/credits/holds).
+//
+// A hold takes `credits` from what is `available` (the balance less what other holds set aside), the credits
+// that expire first. Those credits stay the hold's until it is committed, released or expires (`ttl_seconds`,
+// an hour when left out, at most a day), even if their lot expires or other credits are consumed meanwhile; a
+// direct consume cannot take them. With too few available credits nothing is held and the answer is 409
+// `billing.credits.insufficient`. An `idempotency_key` (or the `Idempotency-Key` header) is required: a repeat
+// returns the first hold with `replayed: true`.
+//
+// Pass WithIdempotencyKey to make a retry safe.
+func (s *CustomersService) ReserveCredits(ctx context.Context, externalID string, req *CreditReserveInput, opts ...RequestOption) (*CreditHoldResult, error) {
+	if req == nil {
+		req = &CreditReserveInput{}
+	}
+	var body any = req
+	var out CreditHoldResult
+	if err := s.c.do(ctx, requestSpec{method: http.MethodPost, path: "/v1/customers/" + url.PathEscape(externalID) + "/credits/holds", query: nil, body: body}, &out, opts); err != nil {
 		return nil, err
 	}
 	return &out, nil

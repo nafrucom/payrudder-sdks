@@ -25,7 +25,7 @@ import (
 )
 
 // Version is the SDK version.
-const Version = "0.2.0"
+const Version = "0.3.0"
 
 // Defaults and environment variables.
 const (

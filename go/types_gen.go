@@ -1134,9 +1134,19 @@ type CreatedPaymentLink struct {
 // CreditBalance is an object of the API; see components.schemas.CreditBalance in api/openapi/v1.yaml.
 type CreditBalance struct {
 	Balance string `json:"balance"`
+	// What active holds set aside (part of balance)
+	Reserved string `json:"reserved"`
+	// balance - reserved: what a consume or a new hold can take
+	Available string `json:"available"`
 	// When some of the credits run out; null when none does
 	NextExpireTime *time.Time  `json:"next_expire_time"`
 	Lots           []CreditLot `json:"lots"`
+}
+
+// CreditCommitInput is an object of the API; see components.schemas.CreditCommitInput in api/openapi/v1.yaml.
+type CreditCommitInput struct {
+	// What the work used; none releases the hold
+	Lines []CreditHoldLine `json:"lines,omitempty"`
 }
 
 // CreditConsumeInput is an object of the API; see components.schemas.CreditConsumeInput in api/openapi/v1.yaml.
@@ -1160,6 +1170,51 @@ type CreditGrantInput struct {
 	IdempotencyKey string     `json:"idempotency_key,omitempty"`
 }
 
+// CreditHold is an object of the API; see components.schemas.CreditHold in api/openapi/v1.yaml.
+type CreditHold struct {
+	ID         string `json:"id"`
+	CustomerID string `json:"customer_id"`
+	// What the hold set aside
+	Credits string `json:"credits"`
+	// What its commit consumed (0 unless committed)
+	Committed string `json:"committed"`
+	// held, then one of the others for good. One of: held, committed, released, expired.
+	Status         string `json:"status"`
+	Reason         string `json:"reason"`
+	IdempotencyKey string `json:"idempotency_key"`
+	// A hold still held then expires and its credits are given back
+	ExpireTime *time.Time `json:"expire_time"`
+	CreateTime *time.Time `json:"create_time"`
+	// When it left held; null while held
+	SettleTime *time.Time       `json:"settle_time"`
+	Lines      []CreditHoldLine `json:"lines"`
+}
+
+// CreditHoldLine is an object of the API; see components.schemas.CreditHoldLine in api/openapi/v1.yaml.
+type CreditHoldLine struct {
+	// int64, above zero (a number is accepted too)
+	Credits Int64 `json:"credits"`
+	// int64: how many units of work the credits paid for (a number is accepted too)
+	Units *Int64 `json:"units,omitempty"`
+	// What the work was (discovery, send, ...); the hold's reason when empty
+	Reason string `json:"reason,omitempty"`
+}
+
+// CreditHoldPage is an object of the API; see components.schemas.CreditHoldPage in api/openapi/v1.yaml.
+type CreditHoldPage struct {
+	Holds         []CreditHold `json:"holds"`
+	NextPageToken string       `json:"next_page_token"`
+}
+
+// CreditHoldResult is an object of the API; see components.schemas.CreditHoldResult in api/openapi/v1.yaml.
+type CreditHoldResult struct {
+	Hold CreditHold `json:"hold"`
+	// True when the call repeated an earlier one: nothing changed
+	Replayed  bool   `json:"replayed"`
+	Balance   string `json:"balance"`
+	Available string `json:"available"`
+}
+
 // CreditLedgerEntry is an object of the API; see components.schemas.CreditLedgerEntry in api/openapi/v1.yaml.
 type CreditLedgerEntry struct {
 	ID    string `json:"id"`
@@ -1172,10 +1227,14 @@ type CreditLedgerEntry struct {
 	Amount         Int64  `json:"amount"`
 	Reason         string `json:"reason"`
 	IdempotencyKey string `json:"idempotency_key"`
-	// Where the credits it touched came from; a purchase is a credit pack that was paid for. One of: purchase,
-	// promo, manual.
+	// Where the credits it touched came from; a purchase is a credit pack that was paid for, plan the credits a
+	// plan includes for a paid period. One of: purchase, promo, manual, plan.
 	Source     string     `json:"source"`
 	CreateTime *time.Time `json:"create_time"`
+	// The hold whose commit wrote this consume row; empty otherwise
+	HoldID string `json:"hold_id,omitempty"`
+	// The units of work of the hold's line, on the first row of the line; 0 otherwise
+	Units string `json:"units,omitempty"`
 }
 
 // CreditLedgerPage is an object of the API; see components.schemas.CreditLedgerPage in api/openapi/v1.yaml.
@@ -1189,7 +1248,9 @@ type CreditLot struct {
 	ID        string `json:"id"`
 	Granted   string `json:"granted"`
 	Remaining string `json:"remaining"`
-	// One of: purchase, promo, manual.
+	// The part of remaining that active holds set aside
+	Reserved string `json:"reserved"`
+	// plan: the credits a plan version includes for a paid period. One of: purchase, promo, manual, plan.
 	Source string `json:"source"`
 	// Null: the credits never expire
 	ExpireTime *time.Time `json:"expire_time"`
@@ -1249,6 +1310,17 @@ type CreditPackInput struct {
 // CreditPackList is an object of the API; see components.schemas.CreditPackList in api/openapi/v1.yaml.
 type CreditPackList struct {
 	Packs []CreditPack `json:"packs"`
+}
+
+// CreditReserveInput is an object of the API; see components.schemas.CreditReserveInput in api/openapi/v1.yaml.
+type CreditReserveInput struct {
+	// int64, above zero (a number is accepted too)
+	Credits Int64 `json:"credits"`
+	// Required, here or in the Idempotency-Key header
+	IdempotencyKey string `json:"idempotency_key"`
+	Reason         string `json:"reason,omitempty"`
+	// How long the hold may wait for its commit; 0 or left out is an hour
+	TTLSeconds *int `json:"ttl_seconds,omitempty"`
 }
 
 // CreditResult is an object of the API; see components.schemas.CreditResult in api/openapi/v1.yaml.
@@ -2475,6 +2547,10 @@ type PlanVersion struct {
 	TrialOncePerCustomer bool `json:"trial_once_per_customer"`
 	// Limits while trialing, on the meters that have one; the others keep their normal limit
 	TrialEntitlements []Entitlement `json:"trial_entitlements"`
+	// Credits per paid fee period; 0: none
+	IncludedCredits string `json:"included_credits"`
+	// The most plan credits a customer keeps after a period's grant; 0: no cap
+	CreditRolloverCap string `json:"credit_rollover_cap"`
 	// Fixed fees other than the tenant currency's monthly one, per currency and interval
 	Fees []CurrencyFee `json:"fees"`
 }
@@ -2783,6 +2859,13 @@ type PublishPlanVersionRequest struct {
 	// limits. Needs trial_days above 0. A meter left out keeps its normal limit during the trial; a customer's
 	// override still wins
 	TrialEntitlements []EntitlementInput `json:"trial_entitlements,omitempty"`
+	// Credits a subscription gets for each paid fee period (with the period's invoice payment; at once for a free
+	// one); 0 or left out: none. An upgrade tops up the difference at once
+	IncludedCredits string `json:"included_credits,omitempty"`
+	// After a period's grant the customer keeps at most this many plan credits; the oldest beyond it are written
+	// off (never what a hold set aside, never purchased or granted credits). 0 or left out: no cap; else at least
+	// included_credits
+	CreditRolloverCap string `json:"credit_rollover_cap,omitempty"`
 }
 
 // RecordContractAcceptanceRequest is the request body of RecordContractAcceptance.
@@ -4081,6 +4164,31 @@ func (p *GetContractRequirementsParams) values() url.Values {
 	}
 	if p.OrderCurrency != "" {
 		v.Set("order_currency", p.OrderCurrency)
+	}
+	return v
+}
+
+// ListCreditHoldsParams are the query parameters of ListCreditHolds.
+type ListCreditHoldsParams struct {
+	// One of: held, committed, released, expired.
+	Status    string
+	PageSize  *int
+	PageToken string
+}
+
+func (p *ListCreditHoldsParams) values() url.Values {
+	v := url.Values{}
+	if p == nil {
+		return v
+	}
+	if p.Status != "" {
+		v.Set("status", p.Status)
+	}
+	if p.PageSize != nil {
+		v.Set("page_size", strconv.Itoa(*p.PageSize))
+	}
+	if p.PageToken != "" {
+		v.Set("page_token", p.PageToken)
 	}
 	return v
 }

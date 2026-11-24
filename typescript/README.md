@@ -126,6 +126,33 @@ await payrudder.recordUsage(event);                         // counted into the 
 await payrudder.handleWebhook(await constructEvent(rawBody, signature, secret)); // a paid invoice or a plan change shows at once
 ```
 
+## Prepaid credits: reserve, then commit or release
+
+Work whose cost is only known at the end (a campaign run, a batch job) sets its estimate aside first, so two runs at once cannot spend the same credits. The hold takes
+from `available` (the balance less what other holds set aside); a direct `consumeCredits` cannot touch it, and its credits stay its own even if their lot expires meanwhile.
+
+```ts
+const { hold } = await payrudder.customers.reserveCredits(user.id, {
+  credits: "500", idempotency_key: `run-${run.id}`, reason: "campaign run", ttl_seconds: 3600,
+});
+try {
+  // ... the work ...
+  await payrudder.creditHolds.commitCreditHold(hold.id, {
+    lines: [
+      { credits: "120", units: "40", reason: "enrichment" },
+      { credits: "30", units: "30", reason: "send" },
+    ],
+  }); // each line is a consume row of the ledger; the 350 left over are given back
+} catch (err) {
+  await payrudder.creditHolds.releaseCreditHold(hold.id); // nothing is consumed
+  throw err;
+}
+const { balance, reserved, available } = await payrudder.customers.getCreditBalance(user.id);
+```
+
+A repeated reserve with the same key returns the first hold; a repeated commit returns the first result. A hold left alone past `ttl_seconds` expires and its
+credits come back. Too few available credits is a `409` with the key `billing.credits.insufficient`; lines adding up to more than the hold, `billing.credits.exceeds_hold`.
+
 ## Checking a limit on every request (deprecated)
 
 `EntitlementCache` is deprecated: use `access` with the client's `cache` option above. `customers.getEntitlement(customer, meter)` is one request to the API. In a middleware that runs on every request of your app, `EntitlementCache` keeps the answers in your own process, so a check costs a request only when nothing fresh is cached.

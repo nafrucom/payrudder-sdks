@@ -25,6 +25,8 @@ final class CreditLedgerEntry implements Model
      * @param string|null $idempotencyKey
      * @param CreditLedgerEntrySource|string|null $source
      * @param string|null $createTime
+     * @param string|null $holdId
+     * @param int|null $units
      */
     public function __construct(
         public readonly ?string $id = null,
@@ -35,6 +37,8 @@ final class CreditLedgerEntry implements Model
         public readonly ?string $idempotencyKey = null,
         public readonly CreditLedgerEntrySource|string|null $source = null,
         public readonly ?string $createTime = null,
+        public readonly ?string $holdId = null,
+        public readonly ?int $units = null,
     ) {}
 
     /**
@@ -51,6 +55,8 @@ final class CreditLedgerEntry implements Model
             idempotencyKey: Cast::string($data['idempotency_key'] ?? null),
             source: Cast::enum(CreditLedgerEntrySource::class, $data['source'] ?? null),
             createTime: Cast::string($data['create_time'] ?? null),
+            holdId: Cast::string($data['hold_id'] ?? null),
+            units: Cast::int($data['units'] ?? null),
         );
     }
 
@@ -68,6 +74,8 @@ final class CreditLedgerEntry implements Model
             'idempotency_key' => $this->idempotencyKey,
             'source' => Cast::wire($this->source),
             'create_time' => $this->createTime,
+            'hold_id' => $this->holdId,
+            'units' => Cast::int64($this->units),
         ]);
     }
 }

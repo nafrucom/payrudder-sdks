@@ -23,6 +23,8 @@ final class PublishPlanVersionRequest implements RequestBody
      * @param bool|null $prorateAfterTrial
      * @param bool|null $trialOncePerCustomer
      * @param list<EntitlementInput>|null $trialEntitlements
+     * @param int|null $includedCredits
+     * @param int|null $creditRolloverCap
      */
     public function __construct(
         public readonly ?int $baseFeeMinor = null,
@@ -33,6 +35,8 @@ final class PublishPlanVersionRequest implements RequestBody
         public readonly ?bool $prorateAfterTrial = null,
         public readonly ?bool $trialOncePerCustomer = null,
         public readonly ?array $trialEntitlements = null,
+        public readonly ?int $includedCredits = null,
+        public readonly ?int $creditRolloverCap = null,
     ) {}
 
     /**
@@ -49,6 +53,8 @@ final class PublishPlanVersionRequest implements RequestBody
             'prorate_after_trial' => $this->prorateAfterTrial,
             'trial_once_per_customer' => $this->trialOncePerCustomer,
             'trial_entitlements' => Cast::wire($this->trialEntitlements),
+            'included_credits' => Cast::int64($this->includedCredits),
+            'credit_rollover_cap' => Cast::int64($this->creditRolloverCap),
         ]);
     }
 }

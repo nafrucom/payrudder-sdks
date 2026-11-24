@@ -11,4 +11,5 @@ enum CreditLedgerEntrySource: string
     case Purchase = 'purchase';
     case Promo = 'promo';
     case Manual = 'manual';
+    case Plan = 'plan';
 }

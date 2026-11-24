@@ -1098,9 +1098,23 @@ export interface CreateWebhookEndpointRequest {
 
 export interface CreditBalance {
   balance: Int64;
+  /** What active holds set aside (part of balance) */
+  reserved: Int64;
+  /** balance - reserved: what a consume or a new hold can take */
+  available: Int64;
   /** When some of the credits run out; null when none does */
   next_expire_time: string | null;
   lots: Array<CreditLot>;
+}
+
+export interface CreditCommitInput {
+  /** What the work used; none releases the hold */
+  lines?: Array<CreditHoldLine>;
+}
+
+export interface CreditCommitInputParams {
+  /** What the work used; none releases the hold */
+  lines?: Array<CreditHoldLineParams>;
 }
 
 export interface CreditConsumeInput {
@@ -1139,6 +1153,56 @@ export interface CreditGrantInputParams {
   idempotency_key?: string;
 }
 
+export interface CreditHold {
+  id: string;
+  customer_id: string;
+  /** What the hold set aside */
+  credits: Int64;
+  /** What its commit consumed (0 unless committed) */
+  committed: Int64;
+  /** held, then one of the others for good */
+  status: "held" | "committed" | "released" | "expired";
+  reason: string;
+  idempotency_key: string;
+  /** A hold still held then expires and its credits are given back */
+  expire_time: string | null;
+  create_time: string | null;
+  /** When it left held; null while held */
+  settle_time: string | null;
+  lines: Array<CreditHoldLine>;
+}
+
+export interface CreditHoldLine {
+  /** int64, above zero (a number is accepted too) */
+  credits: Int64;
+  /** int64: how many units of work the credits paid for (a number is accepted too) */
+  units?: Int64;
+  /** What the work was (discovery, send, ...); the hold's reason when empty */
+  reason?: string;
+}
+
+export interface CreditHoldLineParams {
+  /** int64, above zero (a number is accepted too) */
+  credits: Int64Input;
+  /** int64: how many units of work the credits paid for (a number is accepted too) */
+  units?: Int64Input;
+  /** What the work was (discovery, send, ...); the hold's reason when empty */
+  reason?: string;
+}
+
+export interface CreditHoldPage {
+  holds: Array<CreditHold>;
+  next_page_token: string;
+}
+
+export interface CreditHoldResult {
+  hold: CreditHold;
+  /** True when the call repeated an earlier one: nothing changed */
+  replayed: boolean;
+  balance: Int64;
+  available: Int64;
+}
+
 export interface CreditLedgerEntry {
   id: string;
   lot_id: string;
@@ -1147,9 +1211,13 @@ export interface CreditLedgerEntry {
   amount: Int64;
   reason: string;
   idempotency_key: string;
-  /** Where the credits it touched came from; a purchase is a credit pack that was paid for */
-  source: "purchase" | "promo" | "manual";
+  /** Where the credits it touched came from; a purchase is a credit pack that was paid for, plan the credits a plan includes for a paid period */
+  source: "purchase" | "promo" | "manual" | "plan";
   create_time: string | null;
+  /** The hold whose commit wrote this consume row; empty otherwise */
+  hold_id?: string;
+  /** The units of work of the hold's line, on the first row of the line; 0 otherwise */
+  units?: Int64;
 }
 
 export interface CreditLedgerPage {
@@ -1161,7 +1229,10 @@ export interface CreditLot {
   id: string;
   granted: Int64;
   remaining: Int64;
-  source: "purchase" | "promo" | "manual";
+  /** The part of remaining that active holds set aside */
+  reserved: Int64;
+  /** plan: the credits a plan version includes for a paid period */
+  source: "purchase" | "promo" | "manual" | "plan";
   /** Null: the credits never expire */
   expire_time: string | null;
   create_time: string | null;
@@ -1224,6 +1295,26 @@ export interface CreditPackInputParams {
 
 export interface CreditPackList {
   packs: Array<CreditPack>;
+}
+
+export interface CreditReserveInput {
+  /** int64, above zero (a number is accepted too) */
+  credits: Int64;
+  /** Required, here or in the Idempotency-Key header */
+  idempotency_key: string;
+  reason?: string;
+  /** How long the hold may wait for its commit; 0 or left out is an hour */
+  ttl_seconds?: number;
+}
+
+export interface CreditReserveInputParams {
+  /** int64, above zero (a number is accepted too) */
+  credits: Int64Input;
+  /** Required, here or in the Idempotency-Key header */
+  idempotency_key: string;
+  reason?: string;
+  /** How long the hold may wait for its commit; 0 or left out is an hour */
+  ttl_seconds?: number;
 }
 
 export interface CreditResult {
@@ -2190,6 +2281,12 @@ export interface ListCouponsResponse {
   coupons: Array<Coupon>;
 }
 
+export interface ListCreditHoldsQuery {
+  status?: "held" | "committed" | "released" | "expired";
+  page_size?: number;
+  page_token?: string;
+}
+
 export interface ListCreditLedgerQuery {
   page_size?: number;
   page_token?: string;
@@ -2644,6 +2741,10 @@ export interface PlanVersion {
   trial_once_per_customer: boolean;
   /** Limits while trialing, on the meters that have one; the others keep their normal limit */
   trial_entitlements: Array<Entitlement>;
+  /** Credits per paid fee period; 0: none */
+  included_credits: Int64;
+  /** The most plan credits a customer keeps after a period's grant; 0: no cap */
+  credit_rollover_cap: Int64;
   /** Fixed fees other than the tenant currency's monthly one, per currency and interval */
   fees: Array<CurrencyFee>;
 }
@@ -2975,6 +3076,10 @@ export interface PublishPlanVersionRequest {
   trial_once_per_customer?: boolean;
   /** Limits while a subscription to this version is trialing, one per meter, on meters the version prices or limits. Needs trial_days above 0. A meter left out keeps its normal limit during the trial; a customer's override still wins */
   trial_entitlements?: Array<EntitlementInput>;
+  /** Credits a subscription gets for each paid fee period (with the period's invoice payment; at once for a free one); 0 or left out: none. An upgrade tops up the difference at once */
+  included_credits?: Int64;
+  /** After a period's grant the customer keeps at most this many plan credits; the oldest beyond it are written off (never what a hold set aside, never purchased or granted credits). 0 or left out: no cap; else at least included_credits */
+  credit_rollover_cap?: Int64;
 }
 
 export interface PublishPlanVersionRequestParams {
@@ -2991,6 +3096,10 @@ export interface PublishPlanVersionRequestParams {
   trial_once_per_customer?: boolean;
   /** Limits while a subscription to this version is trialing, one per meter, on meters the version prices or limits. Needs trial_days above 0. A meter left out keeps its normal limit during the trial; a customer's override still wins */
   trial_entitlements?: Array<EntitlementInput>;
+  /** Credits a subscription gets for each paid fee period (with the period's invoice payment; at once for a free one); 0 or left out: none. An upgrade tops up the difference at once */
+  included_credits?: Int64Input;
+  /** After a period's grant the customer keeps at most this many plan credits; the oldest beyond it are written off (never what a hold set aside, never purchased or granted credits). 0 or left out: no cap; else at least included_credits */
+  credit_rollover_cap?: Int64Input;
 }
 
 /**

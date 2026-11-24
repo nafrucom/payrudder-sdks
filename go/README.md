@@ -248,6 +248,32 @@ for _, n := range access.Notices {
 
 With `WithCache`, `Access`, `RecordUsage` and `HandleWebhook` on the client go through the cache below (`AccessTTL` defaults to 5 s); `WithMember(userID)` also checks membership.
 
+## Prepaid credits: reserve, then commit or release
+
+Work whose cost is only known at the end sets its estimate aside first, so two runs at once cannot spend the same credits. The hold takes from `Available` (the balance
+less what other holds set aside); a direct `ConsumeCredits` cannot touch it, and its credits stay its own even if their lot expires meanwhile.
+
+```go
+res, err := client.Customers.ReserveCredits(ctx, "cus_42", &payrudder.CreditReserveInput{
+	Credits: 500, IdempotencyKey: "run-" + runID, Reason: "campaign run", TTLSeconds: payrudder.Ptr(3600),
+})
+if err != nil {
+	return err // a *payrudder.Error with key billing.credits.insufficient when too few are available
+}
+if workErr := run(ctx); workErr != nil {
+	_, err := client.CreditHolds.ReleaseCreditHold(ctx, res.Hold.ID) // nothing is consumed
+	return errors.Join(workErr, err)
+}
+// Each line is a consume row of the ledger; what the lines leave is given back.
+_, err = client.CreditHolds.CommitCreditHold(ctx, res.Hold.ID, &payrudder.CreditCommitInput{Lines: []payrudder.CreditHoldLine{
+	{Credits: 120, Units: payrudder.Ptr[payrudder.Int64](40), Reason: "enrichment"},
+	{Credits: 30, Units: payrudder.Ptr[payrudder.Int64](30), Reason: "send"},
+}})
+```
+
+A repeated reserve with the same key returns the first hold; a repeated commit returns the first result. A hold left alone past `TTLSeconds` expires and its credits
+come back. `GetCreditBalance` answers `Balance`, `Reserved` and `Available`.
+
 ## Caching entitlements and the catalog
 
 `payrudder.NewCache` keeps entitlement checks and the catalog (plans with their current prices, active credit packs, running campaigns) in a store every instance of your app shares. The default is a `MemoryStore` in the process; for Redis, copy this go-redis adapter (the SDK does not import go-redis):

@@ -19,6 +19,7 @@ final class CreditLot implements Model
      * @param string|null $id
      * @param int|null $granted
      * @param int|null $remaining
+     * @param int|null $reserved
      * @param CreditLotSource|string|null $source
      * @param string|null $expireTime
      * @param string|null $createTime
@@ -27,6 +28,7 @@ final class CreditLot implements Model
         public readonly ?string $id = null,
         public readonly ?int $granted = null,
         public readonly ?int $remaining = null,
+        public readonly ?int $reserved = null,
         public readonly CreditLotSource|string|null $source = null,
         public readonly ?string $expireTime = null,
         public readonly ?string $createTime = null,
@@ -41,6 +43,7 @@ final class CreditLot implements Model
             id: Cast::string($data['id'] ?? null),
             granted: Cast::int($data['granted'] ?? null),
             remaining: Cast::int($data['remaining'] ?? null),
+            reserved: Cast::int($data['reserved'] ?? null),
             source: Cast::enum(CreditLotSource::class, $data['source'] ?? null),
             expireTime: Cast::string($data['expire_time'] ?? null),
             createTime: Cast::string($data['create_time'] ?? null),
@@ -56,6 +59,7 @@ final class CreditLot implements Model
             'id' => $this->id,
             'granted' => Cast::int64($this->granted),
             'remaining' => Cast::int64($this->remaining),
+            'reserved' => Cast::int64($this->reserved),
             'source' => Cast::wire($this->source),
             'expire_time' => $this->expireTime,
             'create_time' => $this->createTime,

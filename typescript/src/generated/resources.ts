@@ -58,13 +58,18 @@ import type {
   CreateWebhookEndpointRequest,
   CreatedPaymentLink,
   CreditBalance,
+  CreditCommitInputParams,
   CreditConsumeInputParams,
   CreditGrantInputParams,
+  CreditHold,
+  CreditHoldPage,
+  CreditHoldResult,
   CreditLedgerPage,
   CreditNote,
   CreditPack,
   CreditPackInputParams,
   CreditPackList,
+  CreditReserveInputParams,
   CreditResult,
   CreditSettings,
   CreditSettingsInputParams,
@@ -147,6 +152,7 @@ import type {
   ListCouponRedemptionsQuery,
   ListCouponRedemptionsResponse,
   ListCouponsResponse,
+  ListCreditHoldsQuery,
   ListCreditLedgerQuery,
   ListCreditNotesQuery,
   ListCreditNotesResponse,
@@ -871,6 +877,41 @@ export class CouponsResource {
   }
 }
 
+export class CreditHoldsResource {
+  constructor(private readonly t: Transport) {}
+
+  /**
+   * One credit hold
+   *
+   * `GET /v1/credit-holds/{id}`
+   */
+  getCreditHold(id: string, options?: RequestOptions): Promise<CreditHold> {
+    return this.t.request<CreditHold>({ method: "GET", path: `/v1/credit-holds/${seg(id)}`, response: "json" }, options);
+  }
+
+  /**
+   * Consume what the work used and give the rest back
+   *
+   * Each line becomes a consume row of the ledger (one per lot it took from) with the line's `reason`, its `units` and the hold's id. The lines may add up to at most the hold (409 `billing.credits.exceeds_hold`); what they leave is given back. No lines release the whole hold. A repeat of a commit that adds up to the same returns the first result with `replayed: true`. A released or expired hold cannot be committed (409 `billing.credits.hold_settled`, `billing.credits.hold_expired`).
+   *
+   * `POST /v1/credit-holds/{id}/commit`
+   */
+  commitCreditHold(id: string, body: CreditCommitInputParams, options?: RequestOptions): Promise<CreditHoldResult> {
+    return this.t.request<CreditHoldResult>({ method: "POST", path: `/v1/credit-holds/${seg(id)}/commit`, body, bodyKind: "json", response: "json" }, options);
+  }
+
+  /**
+   * Give a hold back whole
+   *
+   * A repeat, or a release of a hold that expired, changes nothing and answers `replayed true`. A committed hold cannot be released (409 `billing.credits.hold_settled`).
+   *
+   * `POST /v1/credit-holds/{id}/release`
+   */
+  releaseCreditHold(id: string, options?: RequestOptions): Promise<CreditHoldResult> {
+    return this.t.request<CreditHoldResult>({ method: "POST", path: `/v1/credit-holds/${seg(id)}/release`, response: "json" }, options);
+  }
+}
+
 export class CreditNotesResource {
   constructor(private readonly t: Transport) {}
 
@@ -965,7 +1006,7 @@ export class CreditsResource {
   /**
    * Set the low-balance threshold
    *
-   * A consume that takes a customer's balance from at least `low_threshold` credits to fewer announces `credits.low` once (the webhook event). 0, the default, turns it off.
+   * A consume or a hold that takes a customer's available credits from at least `low_threshold` to fewer announces `credits.low` once (the webhook event). 0, the default, turns it off.
    *
    * `PUT /v1/credits/settings`
    */
@@ -1342,7 +1383,7 @@ export class CustomersResource {
   /**
    * What a customer can spend now
    *
-   * The balance leaves out credits whose time has passed. `lots` shows where it comes from, the credits that expire first at the top.
+   * The balance leaves out credits whose time has passed (except what a hold set aside from them). `reserved` is what active holds set aside and `available` what is left to spend or hold. `lots` shows where it comes from, the credits that expire first at the top.
    *
    * `GET /v1/customers/{external_id}/credits`
    */
@@ -1364,7 +1405,7 @@ export class CustomersResource {
   /**
    * Spend credits
    *
-   * Takes the credits that expire first. With too few credits nothing is taken and the answer is 409 `billing.credits.insufficient`. An `idempotency_key` (or the `Idempotency-Key` header) is required: a retried call returns the first result with `replayed: true` instead of charging twice.
+   * Takes the credits that expire first, never the ones a hold set aside. With too few available credits nothing is taken and the answer is 409 `billing.credits.insufficient`. An `idempotency_key` (or the `Idempotency-Key` header) is required: a retried call returns the first result with `replayed: true` instead of charging twice.
    *
    * `POST /v1/customers/{external_id}/credits/consume`
    */
@@ -1379,6 +1420,26 @@ export class CustomersResource {
    */
   listCreditLedger(externalId: string, query?: ListCreditLedgerQuery, options?: RequestOptions): Promise<CreditLedgerPage> {
     return this.t.request<CreditLedgerPage>({ method: "GET", path: `/v1/customers/${seg(externalId)}/credits/ledger`, query, response: "json" }, options);
+  }
+
+  /**
+   * A customer's credit holds, newest first
+   *
+   * `GET /v1/customers/{external_id}/credits/holds`
+   */
+  listCreditHolds(externalId: string, query?: ListCreditHoldsQuery, options?: RequestOptions): Promise<CreditHoldPage> {
+    return this.t.request<CreditHoldPage>({ method: "GET", path: `/v1/customers/${seg(externalId)}/credits/holds`, query, response: "json" }, options);
+  }
+
+  /**
+   * Set credits aside for work that has started
+   *
+   * A hold takes `credits` from what is `available` (the balance less what other holds set aside), the credits that expire first. Those credits stay the hold's until it is committed, released or expires (`ttl_seconds`, an hour when left out, at most a day), even if their lot expires or other credits are consumed meanwhile; a direct consume cannot take them. With too few available credits nothing is held and the answer is 409 `billing.credits.insufficient`. An `idempotency_key` (or the `Idempotency-Key` header) is required: a repeat returns the first hold with `replayed: true`.
+   *
+   * `POST /v1/customers/{external_id}/credits/holds`
+   */
+  reserveCredits(externalId: string, body: CreditReserveInputParams, options?: RequestOptions): Promise<CreditHoldResult> {
+    return this.t.request<CreditHoldResult>({ method: "POST", path: `/v1/customers/${seg(externalId)}/credits/holds`, body, bodyKind: "json", response: "json", idempotencyHeader: true }, options);
   }
 
   /**

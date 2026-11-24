@@ -787,6 +787,8 @@ class PublishPlanVersionRequest(TypedDict, total=False):
     prorate_after_trial: bool
     trial_once_per_customer: bool
     trial_entitlements: list[EntitlementInput]
+    included_credits: int
+    credit_rollover_cap: int
 
 
 class PricePerUnit(TypedDict):
@@ -846,6 +848,8 @@ class PlanVersion(TypedDict):
     prorate_after_trial: bool
     trial_once_per_customer: bool
     trial_entitlements: list[Entitlement]
+    included_credits: int
+    credit_rollover_cap: int
     fees: list[CurrencyFee]
 
 
@@ -1116,13 +1120,16 @@ class CreditLot(TypedDict):
     id: str
     granted: int
     remaining: int
-    source: Literal["purchase", "promo", "manual"]
+    reserved: int
+    source: Literal["purchase", "promo", "manual", "plan"]
     expire_time: str | None
     create_time: str | None
 
 
 class CreditBalance(TypedDict):
     balance: int
+    reserved: int
+    available: int
     next_expire_time: str | None
     lots: list[CreditLot]
 
@@ -1152,20 +1159,74 @@ class CreditConsumeInput(_CreditConsumeInputRequired, total=False):
     reason: str
 
 
-class CreditLedgerEntry(TypedDict):
+class _CreditLedgerEntryRequired(TypedDict):
     id: str
     lot_id: str
     kind: Literal["grant", "consume", "expire", "revoke"]
     amount: int
     reason: str
     idempotency_key: str
-    source: Literal["purchase", "promo", "manual"]
+    source: Literal["purchase", "promo", "manual", "plan"]
     create_time: str | None
+
+
+class CreditLedgerEntry(_CreditLedgerEntryRequired, total=False):
+    hold_id: str
+    units: int
 
 
 class CreditLedgerPage(TypedDict):
     entries: list[CreditLedgerEntry]
     next_page_token: str
+
+
+class _CreditHoldLineRequired(TypedDict):
+    credits: int
+
+
+class CreditHoldLine(_CreditHoldLineRequired, total=False):
+    units: int
+    reason: str
+
+
+class CreditHold(TypedDict):
+    id: str
+    customer_id: str
+    credits: int
+    committed: int
+    status: Literal["held", "committed", "released", "expired"]
+    reason: str
+    idempotency_key: str
+    expire_time: str | None
+    create_time: str | None
+    settle_time: str | None
+    lines: list[CreditHoldLine]
+
+
+class CreditHoldPage(TypedDict):
+    holds: list[CreditHold]
+    next_page_token: str
+
+
+class _CreditReserveInputRequired(TypedDict):
+    credits: int
+    idempotency_key: str
+
+
+class CreditReserveInput(_CreditReserveInputRequired, total=False):
+    reason: str
+    ttl_seconds: int
+
+
+class CreditHoldResult(TypedDict):
+    hold: CreditHold
+    replayed: bool
+    balance: int
+    available: int
+
+
+class CreditCommitInput(TypedDict, total=False):
+    lines: list[CreditHoldLine]
 
 
 class CreditSettings(TypedDict):

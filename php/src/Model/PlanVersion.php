@@ -27,6 +27,8 @@ final class PlanVersion implements Model
      * @param bool|null $prorateAfterTrial
      * @param bool|null $trialOncePerCustomer
      * @param list<Entitlement>|null $trialEntitlements
+     * @param int|null $includedCredits
+     * @param int|null $creditRolloverCap
      * @param list<CurrencyFee>|null $fees
      */
     public function __construct(
@@ -42,6 +44,8 @@ final class PlanVersion implements Model
         public readonly ?bool $prorateAfterTrial = null,
         public readonly ?bool $trialOncePerCustomer = null,
         public readonly ?array $trialEntitlements = null,
+        public readonly ?int $includedCredits = null,
+        public readonly ?int $creditRolloverCap = null,
         public readonly ?array $fees = null,
     ) {}
 
@@ -63,6 +67,8 @@ final class PlanVersion implements Model
             prorateAfterTrial: Cast::bool($data['prorate_after_trial'] ?? null),
             trialOncePerCustomer: Cast::bool($data['trial_once_per_customer'] ?? null),
             trialEntitlements: Cast::models(Entitlement::class, $data['trial_entitlements'] ?? null),
+            includedCredits: Cast::int($data['included_credits'] ?? null),
+            creditRolloverCap: Cast::int($data['credit_rollover_cap'] ?? null),
             fees: Cast::models(CurrencyFee::class, $data['fees'] ?? null),
         );
     }
@@ -85,6 +91,8 @@ final class PlanVersion implements Model
             'prorate_after_trial' => $this->prorateAfterTrial,
             'trial_once_per_customer' => $this->trialOncePerCustomer,
             'trial_entitlements' => Cast::wire($this->trialEntitlements),
+            'included_credits' => Cast::int64($this->includedCredits),
+            'credit_rollover_cap' => Cast::int64($this->creditRolloverCap),
             'fees' => Cast::wire($this->fees),
         ]);
     }

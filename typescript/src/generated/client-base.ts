@@ -14,6 +14,7 @@ import {
   ContractsResource,
   CouponRedemptionsResource,
   CouponsResource,
+  CreditHoldsResource,
   CreditNotesResource,
   CreditPacksResource,
   CreditsResource,
@@ -44,6 +45,7 @@ import {
   WebhookEndpointsResource,
 } from "./resources";
 import type {
+  CreditHoldPage,
   CreditLedgerPage,
   EInvoiceList,
   GetPriceChangeQuery,
@@ -66,6 +68,7 @@ import type {
   ListContractAcceptancesResponse,
   ListCouponRedemptionsQuery,
   ListCouponRedemptionsResponse,
+  ListCreditHoldsQuery,
   ListCreditLedgerQuery,
   ListCreditNotesQuery,
   ListCreditNotesResponse,
@@ -148,6 +151,14 @@ export class Paginators {
     return paginate(
       (q) => this.r.customers.listCreditLedger(externalId, q, options),
       (page) => page.entries,
+      query,
+    );
+  }
+
+  listCreditHolds(externalId: string, query?: ListCreditHoldsQuery, options?: RequestOptions): AsyncGenerator<NonNullable<CreditHoldPage["holds"]>[number], void, undefined> {
+    return paginate(
+      (q) => this.r.customers.listCreditHolds(externalId, q, options),
+      (page) => page.holds,
       query,
     );
   }
@@ -294,6 +305,7 @@ export abstract class PayrudderResources {
   readonly contracts: ContractsResource;
   readonly couponRedemptions: CouponRedemptionsResource;
   readonly coupons: CouponsResource;
+  readonly creditHolds: CreditHoldsResource;
   readonly creditNotes: CreditNotesResource;
   readonly creditPacks: CreditPacksResource;
   readonly credits: CreditsResource;
@@ -338,6 +350,7 @@ export abstract class PayrudderResources {
     this.contracts = new ContractsResource(t);
     this.couponRedemptions = new CouponRedemptionsResource(t);
     this.coupons = new CouponsResource(t);
+    this.creditHolds = new CreditHoldsResource(t);
     this.creditNotes = new CreditNotesResource(t);
     this.creditPacks = new CreditPacksResource(t);
     this.credits = new CreditsResource(t);

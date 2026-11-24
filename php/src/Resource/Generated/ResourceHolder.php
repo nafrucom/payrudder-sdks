@@ -24,6 +24,7 @@ abstract class ResourceHolder
     public readonly ContractsResource $contracts;
     public readonly CouponRedemptionsResource $couponRedemptions;
     public readonly CouponsResource $coupons;
+    public readonly CreditHoldsResource $creditHolds;
     public readonly CreditNotesResource $creditNotes;
     public readonly CreditPacksResource $creditPacks;
     public readonly CreditsResource $credits;
@@ -67,6 +68,7 @@ abstract class ResourceHolder
         $this->contracts = new ContractsResource($requester);
         $this->couponRedemptions = new CouponRedemptionsResource($requester);
         $this->coupons = new CouponsResource($requester);
+        $this->creditHolds = new CreditHoldsResource($requester);
         $this->creditNotes = new CreditNotesResource($requester);
         $this->creditPacks = new CreditPacksResource($requester);
         $this->credits = new CreditsResource($requester);
