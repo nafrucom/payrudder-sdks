@@ -1,3 +1,3 @@
 """Package version, the same in every Payrudder SDK."""
 
-__version__ = "0.3.0"
+__version__ = "0.2.2"

@@ -5,7 +5,7 @@ The four SDKs and the command line share one version number and are released tog
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-11-24
+## [0.2.2] - 2026-11-24
 
 ### Added
 - Credit holds: `ReserveCredits` sets credits aside for work that has started, `CommitCreditHold` consumes what the work used (one ledger row per line, with its units) and gives the rest back, `ReleaseCreditHold` gives a hold back whole; `GetCreditHold` and `ListCreditHolds` read them. A hold that is not settled in time expires.

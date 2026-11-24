@@ -5,7 +5,7 @@ The four SDKs share one version number and are released together.
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-11-24
+## [0.2.2] - 2026-11-24
 
 ### Added
 - Credit holds: `reserve_credits` sets credits aside for work that has started, `commit_credit_hold` consumes what the work used (one ledger row per line, with its units) and gives the rest back, `release_credit_hold` gives a hold back whole; `get_credit_hold` and `list_credit_holds` read them. A hold that is not settled in time expires.
